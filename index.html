@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Pizzica Master</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Audio elements pour chaque niveau -->
+    <audio id="audio-level-1" src="Pizzicarella.mp3" loop preload="auto"></audio>
+    <audio id="audio-level-2" src="Beppe Junior- Pizzica Tarantata.mp3" loop preload="auto"></audio>
+    <audio id="audio-level-3" src="pizzica Salento BTQ.mp3" loop preload="auto"></audio>
+    <audio id="audio-level-4" src="Pizzicarella.mp3" loop preload="auto"></audio>
+    <audio id="audio-level-5" src="Beppe Junior- Pizzica Tarantata.mp3" loop preload="auto"></audio>
+
+    <!-- Projecteurs disco - GAUCHE -->
+    <div class="spotlight spotlight-left-top">
+        <div class="spotlight-beam beam-pink"></div>
+    </div>
+    <div class="spotlight spotlight-left-mid">
+        <div class="spotlight-beam beam-cyan"></div>
+    </div>
+    <div class="spotlight spotlight-left-bottom">
+        <div class="spotlight-beam beam-purple"></div>
+    </div>
+
+    <!-- Projecteurs disco - DROITE -->
+    <div class="spotlight spotlight-right-top">
+        <div class="spotlight-beam beam-gold"></div>
+    </div>
+    <div class="spotlight spotlight-right-mid">
+        <div class="spotlight-beam beam-pink"></div>
+    </div>
+    <div class="spotlight spotlight-right-bottom">
+        <div class="spotlight-beam beam-cyan"></div>
+    </div>
+
+    <!-- ============================================
+         ECRAN D'ACCUEIL (avec demo en arret)
+         ============================================ -->
+    <div id="home-screen">
+        <!-- Instructions a gauche -->
+        <aside id="instructions-panel">
+            <h3>REGOLE DEL GIOCO</h3>
+            <div class="instruction-item">
+                <span class="icon">1</span>
+                <p>Guarda attentamente la <strong>sequenza modello</strong></p>
+            </div>
+            <div class="instruction-item">
+                <span class="icon">2</span>
+                <p>Memorizza ogni movimento dei danzatori</p>
+            </div>
+            <div class="instruction-item warning">
+                <span class="icon">!</span>
+                <p><strong>ATTENZIONE:</strong> Le <em>pause</em> (posizioni ferme) fanno parte della sequenza!</p>
+            </div>
+            <div class="instruction-item">
+                <span class="icon">3</span>
+                <p>Dopo il countdown, trova la coppia che riproduce la sequenza <strong>esatta</strong></p>
+            </div>
+            <div class="instruction-item">
+                <span class="icon">4</span>
+                <p>Le altre 3 coppie fanno <strong>errori sottili</strong></p>
+            </div>
+        </aside>
+
+        <!-- Zone centrale avec demo -->
+        <main id="home-main">
+            <header id="game-header">
+                <div id="school-name">Scuola di Ballo LORETO/PORTA ROMANA</div>
+                <h1>Pizzica Master</h1>
+                <div id="level-display">LIVELLO 1</div>
+                <div id="music-info"></div>
+            </header>
+
+            <div id="demo-preview" class="tile demo-tile">
+                <!-- Couple demo en position initiale -->
+            </div>
+
+            <div id="status-text">Premi PLAY per iniziare</div>
+            <button id="btn-play">PLAY</button>
+        </main>
+    </div>
+
+    <!-- ============================================
+         ECRAN DE JEU (4 carreaux)
+         ============================================ -->
+    <div id="game-screen" style="display: none;">
+        <header id="game-ui-small">
+            <h2>Pizzica Master</h2>
+            <div id="level-display-game"></div>
+        </header>
+
+        <main id="dance-floor"></main>
+
+        <div id="game-status"></div>
+    </div>
+
+    <!-- ============================================
+         OVERLAY SEQUENZA MODELLO (pendant la lecture)
+         ============================================ -->
+    <div id="demo-overlay">
+        <h2>SEQUENZA DA SEGUIRE</h2>
+        <div id="demo-level-info">Livello 1 - Durata: 10s</div>
+        <div id="demo-timer">10</div>
+        <div id="demo-stage" class="tile demo-tile"></div>
+        <div id="demo-progress">
+            <div id="bar"></div>
+        </div>
+        <button id="btn-replay">RIVEDI MODELLO</button>
+    </div>
+
+    <!-- Countdown -->
+    <div id="countdown">3</div>
+
+    <!-- GO Message -->
+    <div id="go-message">GO!</div>
+
+    <!-- ECCO Message (for comparison) -->
+    <div id="ecco-message">ECCO!</div>
+
+    <!-- ============================================
+         COMPARISON OVERLAY (Errore)
+         ============================================ -->
+    <div id="comparison-overlay">
+        <h2>CONFRONTO: SEQUENZA CORRETTA vs TUA SCELTA</h2>
+        <div id="comparison-container">
+            <div class="comparison-side">
+                <h3>✓ SEQUENZA CORRETTA</h3>
+                <div id="comparison-demo" class="tile demo-tile"></div>
+                <p class="comparison-label">Questa è la sequenza modello da seguire</p>
+            </div>
+            <div class="comparison-side">
+                <h3>✗ TUA SCELTA</h3>
+                <div id="comparison-user" class="tile demo-tile"></div>
+                <p class="comparison-label">Questa è la sequenza che hai selezionato</p>
+            </div>
+        </div>
+        <div id="comparison-message"></div>
+        <button id="btn-comparison-retry">Coraggio, riproviamo!</button>
+        <button id="btn-comparison-replay">Rivedi la differenza</button>
+    </div>
+
+    <!-- Resultat -->
+    <div id="result">
+        <div id="result-content"></div>
+        <button id="btn-retry-demo">RIPROVA</button>
+        <button id="btn-show-error" style="display:none;">
+            <span class="frustrato-text">Frustrato/a? Clicca per comprendere il tuo errore!</span>
+        </button>
+        <button id="btn-next-level" style="display:none;">LIVELLO SUCCESSIVO</button>
+        <button id="btn-restart">RICOMINCIA</button>
+    </div>
+
+    <!-- Fireworks pour victoire -->
+    <div id="fireworks-container"></div>
+
+    <!-- Credits -->
+    <div id="credits">Creato all'improvviso da Hatem Maaroufi - 11/2025</div>
+
+    <script src="game.js"></script>
+</body>
+</html>
