@@ -20,6 +20,12 @@ const CONFIG = {
     MOVE_DURATION: 2250,
     // V6 PRO: Etats statiques durent 2 secondes pour etre bien visibles
     PAUSE_DURATION: 2000,
+    // V8: croisement au centre - jamais figes.
+    // Pirouette alternee (un danseur a la fois) et rotation croisee a deux,
+    // legerement ralenties pour laisser le temps au joueur de les lire.
+    CROSS_SPIN_DURATION: 1400,
+    CROSS_ROTATE_DURATION: 3000,
+    MAX_CROSS_MOVES: 2,
     TILE_COUNT: 4,
     MAX_LEVEL: 5
 };
@@ -68,17 +74,31 @@ const STATE = {
     A: 'ROTATION_FORWARD',
     B: 'ROTATION_BACKWARD',
     C: 'HUB_FAR',
-    D: 'POSITION_CLOSE',
+    D: 'POSITION_CLOSE',      // V8: obsolete (plus jamais figes au centre), garde pour compat
     E: 'TRANSLATE_FORWARD',
-    F: 'TRANSLATE_BACKWARD'
+    F: 'TRANSLATE_BACKWARD',
+    // V8: mouvements de CROISEMENT au centre (remplacent la pause D)
+    G: 'CROSS_SPIN_ALTERNATE',   // pirouettes alternees: l'un tourne, l'autre attend, puis echange
+    H: 'CROSS_ROTATE_BOTH'       // rotation croisee a deux autour du petit cercle, ralentie
 };
+
+// V8: etats de croisement (au centre, avec etoiles scintillantes)
+function isCrossState(s) {
+    return s === STATE.G || s === STATE.H;
+}
 
 // ============================================
 // TRANSITIONS VALIDES
+// V8: E mene toujours a un croisement (G/H), jamais a une pause figee.
+// Apres 1 ou 2 croisements max (MAX_CROSS_MOVES), separation obligatoire (F)
+// dans les sens opposes. F est en premiere position: c'est la sortie de secours
+// des boucles de fermeture de sequence.
 // ============================================
 const VALID_TRANSITIONS = {
     [STATE.C]: [STATE.E, STATE.A, STATE.B],
-    [STATE.E]: [STATE.D],
+    [STATE.E]: [STATE.G, STATE.H],
+    [STATE.G]: [STATE.F, STATE.G, STATE.H],
+    [STATE.H]: [STATE.F, STATE.G, STATE.H],
     [STATE.D]: [STATE.F],
     [STATE.F]: [STATE.C],
     [STATE.A]: [STATE.B, STATE.C],
@@ -91,8 +111,25 @@ const STATE_DURATION = {
     [STATE.E]: CONFIG.MOVE_DURATION,
     [STATE.F]: CONFIG.MOVE_DURATION,
     [STATE.A]: CONFIG.MOVE_DURATION,
-    [STATE.B]: CONFIG.MOVE_DURATION
+    [STATE.B]: CONFIG.MOVE_DURATION,
+    [STATE.G]: CONFIG.CROSS_SPIN_DURATION * 2,
+    [STATE.H]: CONFIG.CROSS_ROTATE_DURATION
 };
+
+// V8: filtre les transitions pour ne jamais depasser MAX_CROSS_MOVES
+// croisements consecutifs (la sequence doit alors se separer via F)
+function allowedNextStates(sequence, currentState) {
+    const valid = VALID_TRANSITIONS[currentState];
+    if (!isCrossState(currentState)) return valid;
+    let consecutive = 0;
+    for (let i = sequence.length - 1; i >= 0 && isCrossState(sequence[i]); i--) {
+        consecutive++;
+    }
+    if (consecutive >= CONFIG.MAX_CROSS_MOVES) {
+        return valid.filter(s => !isCrossState(s));
+    }
+    return valid;
+}
 
 // ============================================
 // GENERATEUR DE SEQUENCES
@@ -103,7 +140,7 @@ function generateRandomSequence(targetDurationMs) {
     let currentState = STATE.C;
 
     while (totalDuration < targetDurationMs) {
-        const validNextStates = VALID_TRANSITIONS[currentState];
+        const validNextStates = allowedNextStates(sequence, currentState);
         const nextState = validNextStates[Math.floor(Math.random() * validNextStates.length)];
         sequence.push(nextState);
         totalDuration += STATE_DURATION[nextState];
@@ -111,7 +148,7 @@ function generateRandomSequence(targetDurationMs) {
     }
 
     while (currentState !== STATE.C) {
-        const validNextStates = VALID_TRANSITIONS[currentState];
+        const validNextStates = allowedNextStates(sequence, currentState);
         if (validNextStates.includes(STATE.C)) {
             sequence.push(STATE.C);
             currentState = STATE.C;
@@ -140,9 +177,13 @@ class Couple {
         this.isDemo = isDemo;
         this.level = level; // V6 PRO: Pour flip effect niveau 3+
 
+        // V8: timers internes (phases de croisement, emission d'etoiles)
+        this.internalTimers = [];
+        this.internalIntervals = [];
+
         // V7: geometrie PROPORTIONNELLE a la taille du carreau.
         // Les danseurs grandissent avec le carreau et restent toujours
-        // englobes dedans (extension max = 0.26 + 0.22/2 = 0.37 < 0.5).
+        // englobes dedans.
         this.computeGeometry();
 
         this.currentState = STATE.C;
@@ -163,6 +204,48 @@ class Couple {
         this.radiusClose = tileSize * 0.115;
         this.dancerSize = Math.round(tileSize * 0.22);
         this.container.style.setProperty('--dancer-size', this.dancerSize + 'px');
+        this.updateGuide();
+    }
+
+    // V8: guide dessine par le jeu lui-meme — cercle exterieur au rayon EXACT
+    // de l'orbite des pieds, petit cercle du croisement, axes vertical et
+    // horizontal. Les chaussures des danseurs (ancrees bas-centre) sont donc
+    // toujours en contact avec le cercle ou les lignes.
+    updateGuide() {
+        const w = this.container.clientWidth || 200;
+        const h = this.container.clientHeight || 200;
+        const cx = w / 2;
+        const cy = h / 2;
+        const R = this.radiusFar;
+        const r = this.radiusClose;
+
+        let svg = this.container.querySelector(':scope > svg.guide-svg');
+        if (!svg) {
+            const NS = 'http://www.w3.org/2000/svg';
+            svg = document.createElementNS(NS, 'svg');
+            svg.setAttribute('class', 'guide-svg');
+            ['g-outer', 'g-inner'].forEach(cls => {
+                const c = document.createElementNS(NS, 'circle');
+                c.setAttribute('class', cls);
+                svg.appendChild(c);
+            });
+            ['g-v', 'g-h'].forEach(cls => {
+                const l = document.createElementNS(NS, 'line');
+                l.setAttribute('class', cls);
+                svg.appendChild(l);
+            });
+            this.container.insertBefore(svg, this.container.firstChild);
+        }
+
+        svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        const set = (sel, attrs) => {
+            const el = svg.querySelector(sel);
+            for (const k in attrs) el.setAttribute(k, attrs[k]);
+        };
+        set('.g-outer', { cx, cy, r: R });
+        set('.g-inner', { cx, cy, r });
+        set('.g-v', { x1: cx, y1: cy - R, x2: cx, y2: cy + R });
+        set('.g-h', { x1: cx - R, y1: cy, x2: cx + R, y2: cy });
     }
 
     // V7: re-mesurer apres resize/rotation d'ecran, sinon la geometrie
@@ -170,7 +253,8 @@ class Couple {
     remeasure() {
         if (!this.wheel || !this.wheel.isConnected) return;
         this.computeGeometry();
-        this.radius = (this.currentState === STATE.D || this.currentState === STATE.E)
+        const closeStates = [STATE.D, STATE.E, STATE.G, STATE.H];
+        this.radius = closeStates.includes(this.currentState)
             ? this.radiusClose : this.radiusFar;
         this.applyPosition(true);
     }
@@ -202,8 +286,8 @@ class Couple {
         this.container.appendChild(this.wheel);
     }
 
-    applyPosition(instant = false) {
-        const duration = instant ? '0ms' : `${CONFIG.MOVE_DURATION}ms`;
+    applyPosition(instant = false, durationMs = CONFIG.MOVE_DURATION) {
+        const duration = instant ? '0ms' : `${durationMs}ms`;
 
         this.wheel.style.transitionDuration = duration;
         this.wheel.style.transform = `rotate(${this.wheelAngle}deg)`;
@@ -268,15 +352,86 @@ class Couple {
                 // V6 PRO: Animation rotation - mouvement expressif
                 this.setAnimationClass('rotating');
                 break;
+
+            // V8: CROISEMENT - pirouettes alternees. L'homme tourne sur lui-meme
+            // (etoiles), la femme attend, puis echange. Personne n'est fige.
+            case STATE.G: {
+                this.radius = this.radiusClose;
+                duration = CONFIG.CROSS_SPIN_DURATION * 2;
+                this.manWrapper.classList.add('cross-spinning');
+                this.womanWrapper.classList.add('static-state');
+                this.startStars(this.manWrapper, CONFIG.CROSS_SPIN_DURATION);
+                const swap = setTimeout(() => {
+                    this.manWrapper.classList.remove('cross-spinning');
+                    this.manWrapper.classList.add('static-state');
+                    this.womanWrapper.classList.remove('static-state');
+                    this.womanWrapper.classList.add('cross-spinning');
+                    this.startStars(this.womanWrapper, CONFIG.CROSS_SPIN_DURATION);
+                }, CONFIG.CROSS_SPIN_DURATION);
+                this.internalTimers.push(swap);
+                break;
+            }
+
+            // V8: CROISEMENT - rotation a deux autour du petit cercle,
+            // ralentie, avec etoiles sur les deux danseurs.
+            case STATE.H:
+                this.radius = this.radiusClose;
+                this.wheelAngle += 180;
+                duration = CONFIG.CROSS_ROTATE_DURATION;
+                this.setAnimationClass('cross-rotating');
+                this.startStars(this.manWrapper, duration);
+                this.startStars(this.womanWrapper, duration);
+                break;
         }
 
-        this.applyPosition();
+        // V8: la rotation de croisement (H) est plus lente que la normale
+        const moveDuration = (newState === STATE.H)
+            ? CONFIG.CROSS_ROTATE_DURATION : CONFIG.MOVE_DURATION;
+        this.applyPosition(false, moveDuration);
         return duration;
+    }
+
+    // V8: emission continue de petites etoiles scintillantes pendant une
+    // rotation de croisement; elles s'estompent d'elles-memes (starPop)
+    startStars(wrapper, totalMs) {
+        const spawn = () => {
+            for (let i = 0; i < 3; i++) {
+                const s = document.createElement('span');
+                s.className = 'cross-star';
+                s.textContent = '✦';
+                s.style.left = (Math.random() * 85) + '%';
+                s.style.top = (Math.random() * 85) + '%';
+                s.style.setProperty('--sx', (Math.random() * 44 - 22) + 'px');
+                s.style.setProperty('--sy', (-8 - Math.random() * 30) + 'px');
+                s.style.animationDuration = (450 + Math.random() * 350) + 'ms';
+                wrapper.appendChild(s);
+                const rm = setTimeout(() => s.remove(), 900);
+                this.internalTimers.push(rm);
+            }
+        };
+        spawn();
+        const iv = setInterval(spawn, 240);
+        this.internalIntervals.push(iv);
+        const stop = setTimeout(() => clearInterval(iv), Math.max(0, totalMs - 150));
+        this.internalTimers.push(stop);
+    }
+
+    clearInternalTimers() {
+        this.internalTimers.forEach(t => clearTimeout(t));
+        this.internalIntervals.forEach(i => clearInterval(i));
+        this.internalTimers = [];
+        this.internalIntervals = [];
+        [this.manWrapper, this.womanWrapper].forEach(w => {
+            if (w) w.querySelectorAll('.cross-star').forEach(s => s.remove());
+        });
     }
 
     // V6 PRO: Methodes pour gerer les animations dynamiques
     clearAnimationClasses() {
-        const classes = ['dancing', 'rotating', 'translating', 'close', 'flip', 'static-state'];
+        // V8: stopper aussi les phases de croisement et l'emission d'etoiles
+        this.clearInternalTimers();
+        const classes = ['dancing', 'rotating', 'translating', 'close', 'flip',
+            'static-state', 'cross-spinning', 'cross-rotating'];
         classes.forEach(cls => {
             this.manWrapper.classList.remove(cls);
             this.womanWrapper.classList.remove(cls);
@@ -884,7 +1039,7 @@ class PizzicaGame {
         let attempts = 0;
 
         while (totalDuration < targetDuration && attempts < maxAttempts) {
-            const validNextStates = VALID_TRANSITIONS[currentState];
+            const validNextStates = allowedNextStates(sequence, currentState);
 
             // Choisir le prochain etat avec une strategie selon le type
             let nextState;
@@ -907,7 +1062,7 @@ class PizzicaGame {
 
         // Terminer proprement en position C
         while (currentState !== STATE.C) {
-            const validNextStates = VALID_TRANSITIONS[currentState];
+            const validNextStates = allowedNextStates(sequence, currentState);
             if (validNextStates.includes(STATE.C)) {
                 sequence.push(STATE.C);
                 currentState = STATE.C;
@@ -1568,7 +1723,9 @@ class PizzicaGame {
             [STATE.C]: 'Posizione lontana',
             [STATE.D]: 'Posizione vicina',
             [STATE.E]: 'Traslazione avanti',
-            [STATE.F]: 'Traslazione indietro'
+            [STATE.F]: 'Traslazione indietro',
+            [STATE.G]: 'Incrocio: giri alternati ✦',
+            [STATE.H]: 'Incrocio: rotazione insieme ✦'
         };
         return names[state] || 'Sconosciuto';
     }
