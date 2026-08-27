@@ -3,13 +3,14 @@
  * - support des requetes Range (seek audio/mp4)
  * - aucun listing de repertoire, aucune donnee sensible
  * Lancement: PORT=3020 node deploy/server.mjs  (racine servie = dossier parent)
+ * ROOT_DIR=/chemin  pour servir une autre racine (ex: multi-versions v1/v2/v3)
  */
 import { createServer } from 'node:http';
 import { promises as fsp, createReadStream } from 'node:fs';
 import { join, resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const ROOT = resolve(process.env.ROOT_DIR || fileURLToPath(new URL('..', import.meta.url)));
 const PORT = Number(process.env.PORT || 3020);
 const HOST = process.env.HOST || '127.0.0.1';
 
@@ -56,10 +57,12 @@ const server = createServer(async (req, res) => {
         if (pathname.endsWith('/')) pathname += 'index.html';
 
         const filePath = resolve(join(ROOT, pathname));
-        // anti path-traversal + jamais servir .git ni deploy/
+        // anti path-traversal + jamais servir .git ni deploy/ (a n'importe
+        // quelle profondeur: en multi-versions chaque checkout a les siens)
+        const segments = filePath.split(sep);
         if (!filePath.startsWith(ROOT + sep) ||
-            filePath.includes(sep + '.git' + sep) ||
-            filePath.startsWith(join(ROOT, 'deploy') + sep)) {
+            segments.includes('.git') ||
+            segments.includes('deploy')) {
             res.writeHead(404).end('Not found');
             return;
         }
