@@ -885,6 +885,12 @@ class PizzicaGame {
     cancelAllSequences() {
         this.sequenceTimeouts.forEach(timeout => clearTimeout(timeout));
         this.sequenceTimeouts = [];
+        // V8: stopper aussi les timers internes des couples
+        // (phase d'echange de pirouette G, emission d'etoiles)
+        [this.previewCouple, this.demoCouple, this.comparisonDemoCouple,
+            this.comparisonUserCouple, ...(this.couples || [])].forEach(c => {
+            if (c) c.clearInternalTimers();
+        });
     }
 
     runSequence(couple, sequence, index, onComplete) {
@@ -967,7 +973,7 @@ class PizzicaGame {
 
         this.couples.forEach(c => c.reset());
 
-        this.runAllSequences(allSequences, 0);
+        this.runAllSequences(allSequences);
     }
 
     generateIntelligentSequences() {
@@ -1075,7 +1081,7 @@ class PizzicaGame {
 
         // Si on doit eviter une autre sequence, ajouter une petite modification
         if (avoidSeq && this.sequencesEqual(sequence, avoidSeq)) {
-            this.applySubtleModification(sequence);
+            this.makeSequenceUnique(sequence, [avoidSeq]);
         }
 
         return sequence;
@@ -1111,17 +1117,36 @@ class PizzicaGame {
     }
 
     applySubtleModification(sequence) {
-        // Modifier legerement la sequence pour la rendre unique
+        // Modifier legerement la sequence pour la rendre unique.
+        // V8: l'alternative doit respecter la grammaire complete - cap des
+        // croisements (allowedNextStates) ET transition valide vers l'etat
+        // suivant (sinon on fabriquait des G->C ou 3 croisements de suite).
         if (sequence.length > 4) {
             const pos = sequence.length - 3;
             const currentState = sequence[pos];
-            const validStates = VALID_TRANSITIONS[currentState];
-            if (validStates.length > 1) {
-                // Trouver une alternative differente
-                const alternatives = validStates.filter(s => s !== sequence[pos + 1]);
-                if (alternatives.length > 0) {
-                    sequence[pos + 1] = alternatives[0];
-                }
+            const following = sequence[pos + 2];
+            const validStates = allowedNextStates(sequence.slice(0, pos + 1), currentState);
+            const alternatives = validStates.filter(s =>
+                s !== sequence[pos + 1] &&
+                VALID_TRANSITIONS[s] && VALID_TRANSITIONS[s].includes(following));
+            if (alternatives.length > 0) {
+                sequence[pos + 1] = alternatives[0];
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // V8: rend `sequence` differente de TOUTES les autres. La modification
+    // subtile peut echouer ou creer une nouvelle collision (fuzz: ~0.5%);
+    // le secours - toujours conforme a la grammaire car le C final accepte
+    // une rotation A puis un retour en C - allonge jusqu'a unicite garantie.
+    makeSequenceUnique(sequence, others) {
+        const collides = () => others.some(o =>
+            o !== sequence && this.sequencesEqual(sequence, o));
+        if (!this.applySubtleModification(sequence) || collides()) {
+            while (collides()) {
+                sequence.push(STATE.A, STATE.C);
             }
         }
     }
@@ -1135,20 +1160,15 @@ class PizzicaGame {
     }
 
     ensureUniqueSequences(sequences) {
-        // Verifier et corriger les doublons
+        // Verifier et corriger les doublons.
+        // V8: ne JAMAIS modifier la sequence correcte (elle doit rester
+        // identique a la demo) - on modifie l'autre membre du doublon.
         for (let i = 0; i < sequences.length; i++) {
             for (let j = i + 1; j < sequences.length; j++) {
                 if (this.sequencesEqual(sequences[i], sequences[j])) {
                     console.warn(`⚠️ Sequences ${i} et ${j} identiques, correction...`);
-                    this.applySubtleModification(sequences[j]);
-                    // Re-verifier
-                    if (this.sequencesEqual(sequences[i], sequences[j])) {
-                        // Si toujours identiques, modifier plus drastiquement
-                        if (sequences[j].length > 5) {
-                            const pos = sequences[j].length - 4;
-                            sequences[j].splice(pos, 1); // Supprimer un etat
-                        }
-                    }
+                    const target = (j === this.correctTileId) ? sequences[i] : sequences[j];
+                    this.makeSequenceUnique(target, sequences);
                 }
             }
         }
@@ -1258,26 +1278,17 @@ class PizzicaGame {
         return array;
     }
 
-    runAllSequences(allSequences, index) {
-        const maxLength = Math.max(...allSequences.map(s => s.length));
-
-        if (index >= maxLength) {
-            this.finishGame();
-            return;
-        }
-
-        let maxDuration = 0;
-
+    // V8: chaque carreau avance a son propre rythme (comme la demo) — plus de
+    // lockstep par index qui figeait les carreaux rapides jusqu'a 1s en
+    // attendant les croisements (G=2800ms / H=3000ms) des autres.
+    runAllSequences(allSequences) {
+        let remaining = CONFIG.TILE_COUNT;
         for (let i = 0; i < CONFIG.TILE_COUNT; i++) {
-            const sequence = allSequences[i];
-            const state = index < sequence.length ? sequence[index] : sequence[sequence.length - 1];
-            const duration = this.couples[i].transitionTo(state);
-            maxDuration = Math.max(maxDuration, duration);
+            this.runSequence(this.couples[i], allSequences[i], 0, () => {
+                remaining--;
+                if (remaining === 0) this.finishGame();
+            });
         }
-
-        setTimeout(() => {
-            this.runAllSequences(allSequences, index + 1);
-        }, maxDuration);
     }
 
     // ========================================
@@ -1584,58 +1595,65 @@ class PizzicaGame {
         // Message vide au debut
         this.comparisonMessage.innerHTML = ``;
 
-        // Attendre un peu, puis afficher "ECCO!"
-        setTimeout(() => {
-            // 1. Afficher "ECCO!" brievement
+        // V8: fenetres derivees des durees reelles des etats (G=2800, H=3000...)
+        this.playDivergentStates(correctSeq, userSeq, divergenceIndex, 0);
+    }
+
+    /**
+     * V8: joue l'etat divergent cote demo puis cote joueur, en attendant a
+     * chaque fois la duree REELLE retournee par transitionTo (les croisements
+     * G/H durent plus que les 2500ms historiques). Tous les timeouts sont
+     * traques dans sequenceTimeouts pour etre annulables.
+     */
+    playDivergentStates(correctSeq, userSeq, divergenceIndex, startDelay) {
+        const tEcco = setTimeout(() => {
             this.eccoMessage.style.display = 'block';
-            setTimeout(() => {
+            const tHide = setTimeout(() => {
                 this.eccoMessage.style.display = 'none';
             }, 600);
-
-            // Message
+            this.sequenceTimeouts.push(tHide);
             this.comparisonMessage.innerHTML = `<strong>ECCO L'ERRORE!</strong>`;
-        }, 500);
+        }, startDelay + 500);
+        this.sequenceTimeouts.push(tEcco);
 
-        // 2. DEMO montre l'etat correct
-        setTimeout(() => {
+        const tDemo = setTimeout(() => {
+            if (!this.comparisonDemoCouple) return;
+            let demoDur = CONFIG.MOVE_DURATION;
             if (divergenceIndex < correctSeq.length) {
-                this.comparisonDemoCouple.transitionTo(correctSeq[divergenceIndex]);
-            }
-        }, 1500);
-
-        // 3. DEMO s'arrete, puis USER montre l'etat incorrect
-        setTimeout(() => {
-            // Arreter demo
-            if (this.comparisonDemoCouple) {
-                this.comparisonDemoCouple.stopAnimations();
+                demoDur = this.comparisonDemoCouple.transitionTo(correctSeq[divergenceIndex]);
             }
 
-            // Demarrer user choice
-            if (divergenceIndex < userSeq.length) {
-                this.comparisonUserCouple.transitionTo(userSeq[divergenceIndex]);
-            }
-
-            // Afficher le message final et le bouton replay
-            setTimeout(() => {
-                const correctStateName = this.getStateName(correctSeq[divergenceIndex]);
-                const userStateName = this.getStateName(userSeq[divergenceIndex]);
-
-                this.comparisonMessage.innerHTML = `
-                    <strong>DIFFERENZA TROVATA!</strong><br>
-                    ✓ Sequenza corretta: <span style="color: #00ff00;">${correctStateName}</span><br>
-                    ✗ Tua scelta: <span style="color: #ff4444;">${userStateName}</span><br>
-                    <span style="font-size: 0.9rem; color: #aaa;">Osserva bene la differenza!</span>
-                `;
-
-                // Arreter user choice aussi
-                if (this.comparisonUserCouple) {
-                    this.comparisonUserCouple.stopAnimations();
+            const tUser = setTimeout(() => {
+                if (this.comparisonDemoCouple) {
+                    this.comparisonDemoCouple.stopAnimations();
+                }
+                if (!this.comparisonUserCouple) return;
+                let userDur = CONFIG.MOVE_DURATION;
+                if (divergenceIndex < userSeq.length) {
+                    userDur = this.comparisonUserCouple.transitionTo(userSeq[divergenceIndex]);
                 }
 
-                // Afficher le bouton pour revoir la difference
-                this.btnComparisonReplay.style.display = 'inline-block';
-            }, 2500);
-        }, 4000);
+                const tEnd = setTimeout(() => {
+                    const correctStateName = this.getStateName(correctSeq[divergenceIndex]);
+                    const userStateName = this.getStateName(userSeq[divergenceIndex]);
+
+                    this.comparisonMessage.innerHTML = `
+                        <strong>DIFFERENZA TROVATA!</strong><br>
+                        ✓ Sequenza corretta: <span style="color: #00ff00;">${correctStateName}</span><br>
+                        ✗ Tua scelta: <span style="color: #ff4444;">${userStateName}</span><br>
+                        <span style="font-size: 0.9rem; color: #aaa;">Osserva bene la differenza!</span>
+                    `;
+
+                    if (this.comparisonUserCouple) {
+                        this.comparisonUserCouple.stopAnimations();
+                    }
+                    this.btnComparisonReplay.style.display = 'inline-block';
+                }, userDur + 250);
+                this.sequenceTimeouts.push(tEnd);
+            }, demoDur + 250);
+            this.sequenceTimeouts.push(tUser);
+        }, startDelay + 1500);
+        this.sequenceTimeouts.push(tDemo);
     }
 
     replayDivergence() {
@@ -1649,10 +1667,15 @@ class PizzicaGame {
         // Message vide
         this.comparisonMessage.innerHTML = ``;
 
-        // Reinitialiser les couples a la position avant la divergence
+        // Reinitialiser les couples a la position avant la divergence.
+        // V8: le repositionnement peut lui-meme etre un croisement (jusqu'a
+        // 3000ms) - on attend sa duree reelle avant de rejouer la divergence.
+        let resetDur = 0;
         if (divergenceIndex > 0) {
-            this.comparisonDemoCouple.transitionTo(correctSeq[divergenceIndex - 1]);
-            this.comparisonUserCouple.transitionTo(userSeq[divergenceIndex - 1]);
+            resetDur = Math.max(
+                this.comparisonDemoCouple.transitionTo(correctSeq[divergenceIndex - 1]),
+                this.comparisonUserCouple.transitionTo(userSeq[divergenceIndex - 1])
+            );
         }
 
         // Arreter les animations
@@ -1663,57 +1686,8 @@ class PizzicaGame {
             this.comparisonUserCouple.stopAnimations();
         }
 
-        // Attendre un peu (simuler que les sequences jouent jusqu'au point de divergence)
-        // puis afficher "ECCO!"
-        setTimeout(() => {
-            // Afficher "ECCO!" brievement
-            this.eccoMessage.style.display = 'block';
-            setTimeout(() => {
-                this.eccoMessage.style.display = 'none';
-            }, 600);
-
-            // Message
-            this.comparisonMessage.innerHTML = `<strong>ECCO L'ERRORE!</strong>`;
-        }, 500);
-
-        // Rejouer la sequence de divergence - DEMO d'abord
-        setTimeout(() => {
-            if (divergenceIndex < correctSeq.length) {
-                this.comparisonDemoCouple.transitionTo(correctSeq[divergenceIndex]);
-            }
-        }, 1500);
-
-        // Puis USER choice
-        setTimeout(() => {
-            // Arreter demo
-            if (this.comparisonDemoCouple) {
-                this.comparisonDemoCouple.stopAnimations();
-            }
-
-            // Demarrer user
-            if (divergenceIndex < userSeq.length) {
-                this.comparisonUserCouple.transitionTo(userSeq[divergenceIndex]);
-            }
-
-            setTimeout(() => {
-                const correctStateName = this.getStateName(correctSeq[divergenceIndex]);
-                const userStateName = this.getStateName(userSeq[divergenceIndex]);
-
-                this.comparisonMessage.innerHTML = `
-                    <strong>DIFFERENZA TROVATA!</strong><br>
-                    ✓ Sequenza corretta: <span style="color: #00ff00;">${correctStateName}</span><br>
-                    ✗ Tua scelta: <span style="color: #ff4444;">${userStateName}</span><br>
-                    <span style="font-size: 0.9rem; color: #aaa;">Osserva bene la differenza!</span>
-                `;
-
-                // Arreter user choice
-                if (this.comparisonUserCouple) {
-                    this.comparisonUserCouple.stopAnimations();
-                }
-
-                this.btnComparisonReplay.style.display = 'inline-block';
-            }, 2500);
-        }, 4000);
+        // V8: meme deroule que showDivergence, fenetres aux durees reelles
+        this.playDivergentStates(correctSeq, userSeq, divergenceIndex, resetDur);
     }
 
     getStateName(state) {
@@ -1735,11 +1709,15 @@ class PizzicaGame {
         this.comparisonOverlay.style.display = 'none';
 
         // Nettoyer les couples de comparaison
+        // V8: stopper leurs timers internes (etoiles, phases G) AVANT de
+        // detacher le DOM, sinon les intervalles tournent pour toujours
         if (this.comparisonDemoCouple) {
+            this.comparisonDemoCouple.stopAnimations();
             this.comparisonDemo.innerHTML = '';
             this.comparisonDemoCouple = null;
         }
         if (this.comparisonUserCouple) {
+            this.comparisonUserCouple.stopAnimations();
             this.comparisonUser.innerHTML = '';
             this.comparisonUserCouple = null;
         }
