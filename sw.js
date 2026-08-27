@@ -2,7 +2,7 @@
    Strategie: network-first pour les fichiers du jeu (toujours a jour),
    fallback cache si hors ligne. Les gros medias passent en cache-first. */
 
-const CACHE_NAME = 'pizzica-v7-1';
+const CACHE_NAME = 'pizzica-v7-2';
 
 const CORE_ASSETS = [
     './',
@@ -43,15 +43,17 @@ self.addEventListener('fetch', (event) => {
     const isMedia = /\.(mp3|mp4)(\?.*)?$/i.test(req.url);
 
     if (isMedia) {
-        // Cache-first pour les gros medias, mais on ne met PAS en cache les
-        // reponses partielles (206) issues des requetes Range.
+        // Cache-first pour les gros medias. Les elements <audio>/<video>
+        // envoient quasi toujours un header Range: on cle le cache par URL
+        // et on recupere/stocke le fichier COMPLET (une reponse 200 complete
+        // est acceptee par les elements media meme pour une requete Range).
         event.respondWith(
-            caches.match(req).then((cached) => {
+            caches.match(req.url).then((cached) => {
                 if (cached) return cached;
-                return fetch(req).then((resp) => {
-                    if (resp.ok && resp.status === 200 && !req.headers.has('range')) {
+                return fetch(req.url).then((resp) => {
+                    if (resp.ok && resp.status === 200) {
                         const copy = resp.clone();
-                        caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
+                        caches.open(CACHE_NAME).then((c) => c.put(req.url, copy)).catch(() => {});
                     }
                     return resp;
                 });

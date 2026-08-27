@@ -1,0 +1,42 @@
+{
+  "packageId": "site.marofai.apps.pizzica",
+  "host": "apps.marofai.site",
+  "name": "Pizzica Master",
+  "launcherName": "Pizzica",
+  "display": "fullscreen",
+  "themeColor": "#0A0A0A",
+  "themeColorDark": "#0A0A0A",
+  "navigationColor": "#0A0A0A",
+  "navigationColorDark": "#0A0A0A",
+  "navigationDividerColor": "#0A0A0A",
+  "navigationDividerColorDark": "#0A0A0A",
+  "backgroundColor": "#0A0A0A",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://apps.marofai.site/icon-512.png",
+  "maskableIconUrl": "https://apps.marofai.site/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "C:\\Users\\maahat\\Documents\\Pizzica-game-keys\\pizzica-release.keystore",
+    "alias": "pizzica"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://apps.marofai.site/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://apps.marofai.site/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

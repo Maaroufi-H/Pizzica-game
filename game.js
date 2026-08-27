@@ -143,11 +143,7 @@ class Couple {
         // V7: geometrie PROPORTIONNELLE a la taille du carreau.
         // Les danseurs grandissent avec le carreau et restent toujours
         // englobes dedans (extension max = 0.26 + 0.22/2 = 0.37 < 0.5).
-        const tileSize = Math.min(container.clientWidth, container.clientHeight) || 200;
-        this.radiusFar = tileSize * 0.26;
-        this.radiusClose = tileSize * 0.115;
-        this.dancerSize = Math.round(tileSize * 0.22);
-        container.style.setProperty('--dancer-size', this.dancerSize + 'px');
+        this.computeGeometry();
 
         this.currentState = STATE.C;
         this.wheelAngle = 0;
@@ -158,6 +154,24 @@ class Couple {
         this.womanWrapper = null;
 
         this.createDOM();
+        this.applyPosition(true);
+    }
+
+    computeGeometry() {
+        const tileSize = Math.min(this.container.clientWidth, this.container.clientHeight) || 200;
+        this.radiusFar = tileSize * 0.26;
+        this.radiusClose = tileSize * 0.115;
+        this.dancerSize = Math.round(tileSize * 0.22);
+        this.container.style.setProperty('--dancer-size', this.dancerSize + 'px');
+    }
+
+    // V7: re-mesurer apres resize/rotation d'ecran, sinon la geometrie
+    // figee a la creation rogne les danseurs (les carreaux suivent le viewport)
+    remeasure() {
+        if (!this.wheel || !this.wheel.isConnected) return;
+        this.computeGeometry();
+        this.radius = (this.currentState === STATE.D || this.currentState === STATE.E)
+            ? this.radiusClose : this.radiusFar;
         this.applyPosition(true);
     }
 
@@ -398,6 +412,27 @@ class PizzicaGame {
         // Initialisation
         this.updateLevelDisplay();
         this.createPreviewCouple();
+
+        // V7: re-mesurer la geometrie de tous les couples vivants
+        // apres resize / rotation d'ecran (debounce 150ms)
+        let resizeTimer = null;
+        const onViewportChange = () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => this.remeasureAllCouples(), 150);
+        };
+        window.addEventListener('resize', onViewportChange);
+        window.addEventListener('orientationchange', onViewportChange);
+    }
+
+    remeasureAllCouples() {
+        const all = [
+            this.previewCouple,
+            this.demoCouple,
+            this.comparisonDemoCouple,
+            this.comparisonUserCouple,
+            ...this.couples
+        ];
+        all.forEach(c => { if (c) c.remeasure(); });
     }
 
     // ========================================
@@ -570,8 +605,10 @@ class PizzicaGame {
     }
 
     startDemoSequence() {
-        // V7: afficher l'overlay AVANT de creer le couple
-        // (la taille du carreau doit etre mesurable pour la geometrie proportionnelle)
+        // V7: masquer l'accueil (sinon il transparait a travers l'overlay
+        // desormais transparent), puis afficher l'overlay AVANT de creer le
+        // couple (la taille du carreau doit etre mesurable)
+        this.homeScreen.style.display = 'none';
         this.demoOverlay.style.display = 'flex';
         this.createDemoCouple();
 
@@ -672,7 +709,9 @@ class PizzicaGame {
 
     retryDemoSequence() {
         // Afficher la demo avec la MEME sequence
-        // V7: overlay visible d'abord, puis creation du couple (mesure de taille)
+        // V7: masquer l'ecran de jeu (les 4 carreaux transparaitraient),
+        // overlay visible d'abord, puis creation du couple (mesure de taille)
+        this.gameScreen.style.display = 'none';
         this.demoOverlay.style.display = 'flex';
         this.createDemoCouple();
         this.progressBar.style.width = '0%';
@@ -1562,14 +1601,20 @@ class PizzicaGame {
 document.addEventListener('DOMContentLoaded', () => {
     window.game = new PizzicaGame();
 
-    // V7: certains Android bloquent l'autoplay de la video d'ambiance
-    // tant que l'utilisateur n'a pas touche l'ecran
-    document.addEventListener('pointerdown', () => {
+    // V7: certains Android bloquent l'autoplay de la video d'ambiance tant
+    // que l'utilisateur n'a pas interagi. On reessaie a chaque toucher
+    // jusqu'a ce que la lecture demarre vraiment.
+    const unlockBgVideo = () => {
         const v = document.getElementById('bg-video');
-        if (v && v.paused) {
-            v.play().catch(() => {});
+        if (!v || !v.paused) {
+            document.removeEventListener('pointerup', unlockBgVideo);
+            return;
         }
-    }, { once: true });
+        v.play().then(() => {
+            document.removeEventListener('pointerup', unlockBgVideo);
+        }).catch(() => { /* on retentera au prochain toucher */ });
+    };
+    document.addEventListener('pointerup', unlockBgVideo);
 });
 
 // V7: service worker (PWA / Trusted Web Activity pour le Play Store)
