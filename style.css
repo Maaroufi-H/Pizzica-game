@@ -44,12 +44,28 @@ body {
     touch-action: manipulation;
 }
 
+/* V7: video d'ambiance pizzica (YouTube) derriere tout le jeu */
+#video-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+#video-bg video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.55;
+}
+
 body::before {
     content: '';
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.65);
-    z-index: 0;
+    z-index: 1;
 }
 
 /* ============================================
@@ -276,10 +292,10 @@ body::before {
     margin-top: 5px;
 }
 
-/* Demo preview sur l'accueil */
+/* Demo preview sur l'accueil - V7: agrandi pour englober completement les danseurs */
 #demo-preview {
-    width: 200px;
-    height: 200px;
+    width: 260px;
+    height: 260px;
     margin: 15px 0;
 }
 
@@ -392,8 +408,8 @@ button:disabled {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    width: min(85vw, 450px);
-    height: min(70vh, 450px);
+    width: min(85vw, 560px);
+    height: min(78vh, 560px);
     gap: 6px;
     padding: 8px;
     background: rgba(17, 17, 17, 0.9);
@@ -663,8 +679,8 @@ button:disabled {
 #demo-overlay {
     position: fixed;
     inset: 0;
-    background: url('pizz2.jpg') no-repeat center center;
-    background-size: cover;
+    /* V7: fond transparent pour laisser la video d'ambiance visible */
+    background: transparent;
     display: none;
     flex-direction: column;
     align-items: center;
@@ -708,15 +724,16 @@ button:disabled {
     50% { transform: scale(1.1); }
 }
 
+/* V7: carreau principal de la demo agrandi de 25% (200 -> 250) */
 #demo-overlay .tile {
-    width: 200px;
-    height: 200px;
+    width: 250px;
+    height: 250px;
     margin: 12px;
     cursor: default;
 }
 
 #demo-progress {
-    width: 200px;
+    width: 250px;
     height: 6px;
     background: #333;
     border-radius: 3px;
@@ -1049,14 +1066,23 @@ button:disabled {
 
     #game-header h1 { font-size: 1.5rem; letter-spacing: 2px; }
     #level-display { font-size: 0.95rem; }
-    #demo-preview { width: 160px; height: 160px; }
+    #demo-preview { width: 220px; height: 220px; }
 
     button { padding: 12px 30px; font-size: 1rem; }
 
+    /* V7: les 4 carreaux occupent plus de 80% de l'ecran Android */
+    #game-ui-small { margin-bottom: 4px; }
+    #game-ui-small h2 { font-size: 1rem; }
+    #level-display-game { font-size: 0.85rem; }
+    #game-status { font-size: 0.9rem; margin: 6px 0; }
+
     #dance-floor {
-        width: min(95vw, 350px);
-        height: min(60vh, 350px);
+        width: 96vw;
+        height: min(86vh, calc(100dvh - 110px));
     }
+
+    #demo-overlay .tile { width: min(250px, 66vw); height: min(250px, 66vw); }
+    #demo-progress { width: min(250px, 66vw); }
 
     #countdown { font-size: 6rem; }
     #go-message { font-size: 7rem; }
@@ -1077,6 +1103,9 @@ button:disabled {
 
     .spotlight { width: 12px; height: 12px; }
     .spotlight-beam { width: 80px; height: 250px; }
+
+    /* V7: sur mobile les credits chevauchent le statut de jeu */
+    #credits { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -1090,23 +1119,19 @@ button:disabled {
     .instruction-item.warning { padding: 4px; }
 
     #game-header h1 { font-size: 1.3rem; }
-    #demo-preview { width: 140px; height: 140px; }
+    #demo-preview { width: 200px; height: 200px; }
 
+    /* V7: pleine occupation de l'ecran Android (>80%) */
     #dance-floor {
-        width: min(98vw, 300px);
-        height: min(55vh, 300px);
+        width: 97vw;
+        height: min(86vh, calc(100dvh - 100px));
         gap: 4px;
         padding: 5px;
     }
 
-    .demo-tile {
-        --radius-far: 45px;
-        --radius-close: 20px;
-        --dancer-size: 38px;
-    }
-
-    #demo-overlay .tile { width: 160px; height: 160px; }
-    #demo-progress { width: 160px; }
+    /* V7: +25% par rapport aux 160px d'origine */
+    #demo-overlay .tile { width: min(200px, 62vw); height: min(200px, 62vw); }
+    #demo-progress { width: min(200px, 62vw); }
 }
 
 /* Landscape mobile */
@@ -1115,12 +1140,17 @@ button:disabled {
 
     #home-main { flex-direction: row; gap: 20px; }
     #game-header { margin-bottom: 0; }
-    #demo-preview { width: 150px; height: 150px; }
+    #demo-preview { width: min(180px, 42vh); height: min(180px, 42vh); }
 
+    /* V7: paysage - les carreaux dominent l'ecran */
+    #game-ui-small { display: none; }
     #dance-floor {
-        width: min(50vw, 300px);
-        height: min(85vh, 300px);
+        width: min(92vw, 700px);
+        height: 84vh;
     }
+
+    #demo-overlay .tile { width: min(250px, 52vh); height: min(250px, 52vh); }
+    #demo-progress { width: min(250px, 52vh); }
 
     #countdown { font-size: 5rem; }
     #go-message { font-size: 6rem; }

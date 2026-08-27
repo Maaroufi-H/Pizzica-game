@@ -140,10 +140,14 @@ class Couple {
         this.isDemo = isDemo;
         this.level = level; // V6 PRO: Pour flip effect niveau 3+
 
-        // Rayons pour la demo un peu plus grands
-        this.radiusFar = isDemo ? 55 : CONFIG.RADIUS_FAR;
-        this.radiusClose = isDemo ? 24 : CONFIG.RADIUS_CLOSE;
-        this.dancerSize = isDemo ? 48 : CONFIG.DANCER_SIZE;
+        // V7: geometrie PROPORTIONNELLE a la taille du carreau.
+        // Les danseurs grandissent avec le carreau et restent toujours
+        // englobes dedans (extension max = 0.26 + 0.22/2 = 0.37 < 0.5).
+        const tileSize = Math.min(container.clientWidth, container.clientHeight) || 200;
+        this.radiusFar = tileSize * 0.26;
+        this.radiusClose = tileSize * 0.115;
+        this.dancerSize = Math.round(tileSize * 0.22);
+        container.style.setProperty('--dancer-size', this.dancerSize + 'px');
 
         this.currentState = STATE.C;
         this.wheelAngle = 0;
@@ -566,11 +570,11 @@ class PizzicaGame {
     }
 
     startDemoSequence() {
-        // Creer le couple demo
+        // V7: afficher l'overlay AVANT de creer le couple
+        // (la taille du carreau doit etre mesurable pour la geometrie proportionnelle)
+        this.demoOverlay.style.display = 'flex';
         this.createDemoCouple();
 
-        // Afficher l'overlay de demo
-        this.demoOverlay.style.display = 'flex';
         this.progressBar.style.width = '0%';
 
         // V6 PRO: Demarrer le timer visible
@@ -640,9 +644,8 @@ class PizzicaGame {
             t.classList.remove('selected-correct', 'selected-wrong', 'disco-active');
         });
 
-        // Recreer les couples
+        // Recreer les couples (le couple demo sera cree une fois l'overlay visible)
         this.createDanceFloor();
-        this.createDemoCouple();
 
         // Activer les projecteurs
         this.activateSpotlights();
@@ -669,7 +672,9 @@ class PizzicaGame {
 
     retryDemoSequence() {
         // Afficher la demo avec la MEME sequence
+        // V7: overlay visible d'abord, puis creation du couple (mesure de taille)
         this.demoOverlay.style.display = 'flex';
+        this.createDemoCouple();
         this.progressBar.style.width = '0%';
 
         // V6 PRO: Redemarrer le timer
@@ -1556,4 +1561,20 @@ class PizzicaGame {
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
     window.game = new PizzicaGame();
+
+    // V7: certains Android bloquent l'autoplay de la video d'ambiance
+    // tant que l'utilisateur n'a pas touche l'ecran
+    document.addEventListener('pointerdown', () => {
+        const v = document.getElementById('bg-video');
+        if (v && v.paused) {
+            v.play().catch(() => {});
+        }
+    }, { once: true });
 });
+
+// V7: service worker (PWA / Trusted Web Activity pour le Play Store)
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+}

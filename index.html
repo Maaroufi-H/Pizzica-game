@@ -8,8 +8,18 @@
     <meta name="theme-color" content="#0a0a0a">
     <title>Pizzica Master</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
+    <!-- V7: video d'ambiance pizzica (YouTube) en fond, discrete derriere le voile sombre -->
+    <div id="video-bg">
+        <video id="bg-video" autoplay muted loop playsinline preload="auto" poster="pizz2.jpg">
+            <source src="bg-video.mp4" type="video/mp4">
+        </video>
+    </div>
+
     <!-- Audio elements pour chaque niveau -->
     <audio id="audio-level-1" src="Pizzicarella.mp3" loop preload="auto"></audio>
     <audio id="audio-level-2" src="Beppe Junior- Pizzica Tarantata.mp3" loop preload="auto"></audio>
