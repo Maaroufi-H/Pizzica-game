@@ -1,0 +1,17 @@
+[Unit]
+Description=Pizzica Master (apps.marofai.site)
+After=network.target
+
+[Service]
+Type=simple
+User=ttagent
+Environment=HOME=/home/ttagent
+Environment=PORT=3020
+Environment=HOST=0.0.0.0
+WorkingDirectory=/opt/pizzica-game/app
+ExecStart=/usr/bin/node /opt/pizzica-game/app/deploy/server.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
