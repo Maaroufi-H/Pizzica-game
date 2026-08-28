@@ -474,6 +474,37 @@ button:disabled {
     box-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
 }
 
+/* V10: grille selon le nombre de carreaux du livello.
+   Principiante = 2 coppie, Intermedio = 3, Avanzato = 4 (2x2). */
+#dance-floor.tiles-2 {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: 1fr;
+    height: min(48vh, 340px);
+}
+
+#dance-floor.tiles-3 {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr;
+    width: min(92vw, 800px);
+    height: min(42vh, 300px);
+}
+
+@media (orientation: portrait) {
+    /* en portrait, on empile pour garder de grands carreaux */
+    #dance-floor.tiles-2 {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(2, 1fr);
+        width: min(60vw, 400px);
+        height: min(78vh, 720px);
+    }
+    #dance-floor.tiles-3 {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(3, 1fr);
+        width: min(46vw, 320px);
+        height: min(82vh, 900px);
+    }
+}
+
 /* Carreau - V8: UNE seule couleur, semi-transparente (la video transparait).
    Le guide (cercles + axes) est un SVG dessine par le jeu, avec un rayon
    EXACTEMENT egal a l'orbite des pieds des danseurs. */
@@ -767,10 +798,12 @@ button:disabled {
    V9 - JAMAIS FIGES
    ============================================ */
 
-/* Rotation magique SUR PLACE (remplace les pauses figees): pirouette en
-   boucle avec etoiles - c'est un element de la sequence a part entiere */
+/* Rotation magique SUR PLACE - element de la sequence a part entiere.
+   V10: UN SEUL tour complet, tres lent, etale sur toute la duree de l'etat
+   (--magic-dur, posee par Couple.setMagicSpin). Une iteration, pas de
+   boucle: le joueur compte sans ambiguite 1 rotation = 1 unite. */
 .dancer-wrapper.magic-spinning .dancer {
-    animation: magicSpin 1s linear infinite;
+    animation: magicSpin var(--magic-dur, 3000ms) linear 1 both;
 }
 
 @keyframes magicSpin {

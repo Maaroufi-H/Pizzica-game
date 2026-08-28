@@ -18,54 +18,44 @@ const CONFIG = {
     // V6 PRO: Taille augmentee de 15% (40 * 1.15 = 46)
     DANCER_SIZE: 46,
     MOVE_DURATION: 2250,
-    // V6 PRO: Etats statiques durent 2 secondes pour etre bien visibles
-    PAUSE_DURATION: 2000,
+    // V10: la rotation magique est TRES LENTE et fait UN SEUL tour complet
+    // pendant toute la duree de l'etat — le joueur compte 1 unite, sans
+    // ambiguite (avant: pirouette 1s en boucle infinie, impossible a compter)
+    PAUSE_DURATION: 3000,
     // V8: croisement au centre - jamais figes.
     // Pirouette alternee (un danseur a la fois) et rotation croisee a deux,
     // legerement ralenties pour laisser le temps au joueur de les lire.
     CROSS_SPIN_DURATION: 1400,
     CROSS_ROTATE_DURATION: 3000,
     MAX_CROSS_MOVES: 2,
+    // V10: le nombre de carreaux depend du livello (2/3/4) — voir LEVELS
     TILE_COUNT: 4,
-    MAX_LEVEL: 5
+    MAX_LEVEL: 9
 };
 
 // ============================================
-// CONFIGURATION DES NIVEAUX (NOUVELLE DUREE)
-// Niveau 1 = 10s, +5s par niveau
+// V10: NIVEAUX PAR PALIERS (tiles = nb de carreaux)
+// - Principiante: 3 sotto-livelli, SEMPRE 2 carreaux, duree 10 -> 15 -> 20s
+//   (la duree qui augmente = plus de combinaisons a memoriser)
+// - Intermedio:   3 sotto-livelli, 3 carreaux, meme echelle de durees
+// - Avanzato:     3 sotto-livelli, 4 carreaux, meme echelle de durees
 // ============================================
 const LEVELS = {
-    1: {
-        duration: 10,
-        name: 'Principiante',
-        music: 'Pizzicarella',
-        audioId: 'audio-level-1'
-    },
-    2: {
-        duration: 15,
-        name: 'Facile',
-        music: 'Beppe Junior - Pizzica Tarantata',
-        audioId: 'audio-level-2'
-    },
-    3: {
-        duration: 20,
-        name: 'Medio',
-        music: 'Pizzica Salento BTQ',
-        audioId: 'audio-level-3'
-    },
-    4: {
-        duration: 25,
-        name: 'Difficile',
-        music: 'Pizzicarella',
-        audioId: 'audio-level-4'
-    },
-    5: {
-        duration: 30,
-        name: 'Esperto',
-        music: 'Beppe Junior - Pizzica Tarantata',
-        audioId: 'audio-level-5'
-    }
+    1: { duration: 10, tiles: 2, name: 'Principiante I',   music: 'Pizzicarella',                     audioId: 'audio-level-1' },
+    2: { duration: 15, tiles: 2, name: 'Principiante II',  music: 'Beppe Junior - Pizzica Tarantata', audioId: 'audio-level-2' },
+    3: { duration: 20, tiles: 2, name: 'Principiante III', music: 'Pizzica Salento BTQ',              audioId: 'audio-level-3' },
+    4: { duration: 10, tiles: 3, name: 'Intermedio I',     music: 'Pizzicarella',                     audioId: 'audio-level-1' },
+    5: { duration: 15, tiles: 3, name: 'Intermedio II',    music: 'Beppe Junior - Pizzica Tarantata', audioId: 'audio-level-2' },
+    6: { duration: 20, tiles: 3, name: 'Intermedio III',   music: 'Pizzica Salento BTQ',              audioId: 'audio-level-3' },
+    7: { duration: 10, tiles: 4, name: 'Avanzato I',       music: 'Pizzicarella',                     audioId: 'audio-level-1' },
+    8: { duration: 15, tiles: 4, name: 'Avanzato II',      music: 'Beppe Junior - Pizzica Tarantata', audioId: 'audio-level-2' },
+    9: { duration: 20, tiles: 4, name: 'Avanzato III',     music: 'Pizzica Salento BTQ',              audioId: 'audio-level-3' }
 };
+
+// V10: nombre de carreaux du niveau courant
+function tilesForLevel(level) {
+    return (LEVELS[level] && LEVELS[level].tiles) || CONFIG.TILE_COUNT;
+}
 
 // ============================================
 // V9: PERSONNAGES SELECTIONNABLES (2 hommes, 2 femmes)
@@ -106,7 +96,14 @@ const STATE = {
     F: 'TRANSLATE_BACKWARD',
     // V8: mouvements de CROISEMENT au centre (remplacent la pause D)
     G: 'CROSS_SPIN_ALTERNATE',   // pirouettes alternees: l'un tourne, l'autre attend, puis echange
-    H: 'CROSS_ROTATE_BOTH'       // rotation croisee a deux autour du petit cercle, ralentie
+    H: 'CROSS_ROTATE_BOTH',      // rotation croisee a deux autour du petit cercle, ralentie
+    // V10: REGLE DU CROISEMENT - apres un croisement au centre, INTERDIT de
+    // continuer sur la meme trajectoire. Les danseurs soit reculent (F),
+    // soit sortent sur la ligne PERPENDICULAIRE, chacun dans un sens oppose
+    // (ils sont diametralement opposes sur la roue, donc P/Q les envoient
+    // automatiquement dans des sens opposes).
+    P: 'EXIT_PERPENDICULAR_CW',  // sortie perpendiculaire, quart de tour horaire
+    Q: 'EXIT_PERPENDICULAR_CCW'  // sortie perpendiculaire, quart de tour anti-horaire
 };
 
 // V8: etats de croisement (au centre, avec etoiles scintillantes)
@@ -121,13 +118,17 @@ function isCrossState(s) {
 // dans les sens opposes. F est en premiere position: c'est la sortie de secours
 // des boucles de fermeture de sequence.
 // ============================================
+// V10: sorties de croisement = F (retour en arriere) OU P/Q (ligne
+// perpendiculaire, sens opposes). Jamais tout droit sur la meme trajectoire.
 const VALID_TRANSITIONS = {
     [STATE.C]: [STATE.E, STATE.A, STATE.B],
     [STATE.E]: [STATE.G, STATE.H],
-    [STATE.G]: [STATE.F, STATE.G, STATE.H],
-    [STATE.H]: [STATE.F, STATE.G, STATE.H],
+    [STATE.G]: [STATE.F, STATE.P, STATE.Q, STATE.G, STATE.H],
+    [STATE.H]: [STATE.F, STATE.P, STATE.Q, STATE.G, STATE.H],
     [STATE.D]: [STATE.F],
     [STATE.F]: [STATE.C],
+    [STATE.P]: [STATE.C],
+    [STATE.Q]: [STATE.C],
     [STATE.A]: [STATE.B, STATE.C],
     [STATE.B]: [STATE.A, STATE.C]
 };
@@ -140,7 +141,9 @@ const STATE_DURATION = {
     [STATE.A]: CONFIG.MOVE_DURATION,
     [STATE.B]: CONFIG.MOVE_DURATION,
     [STATE.G]: CONFIG.CROSS_SPIN_DURATION * 2,
-    [STATE.H]: CONFIG.CROSS_ROTATE_DURATION
+    [STATE.H]: CONFIG.CROSS_ROTATE_DURATION,
+    [STATE.P]: CONFIG.MOVE_DURATION,
+    [STATE.Q]: CONFIG.MOVE_DURATION
 };
 
 // V8: filtre les transitions pour ne jamais depasser MAX_CROSS_MOVES
@@ -344,12 +347,11 @@ class Couple {
         switch(newState) {
             case STATE.C:
                 this.radius = this.radiusFar;
-                if (prevState === STATE.D || prevState === STATE.F) {
-                    duration = CONFIG.PAUSE_DURATION;
-                }
-                // V9: JAMAIS figes - sur place, les deux danseurs font la
-                // rotation magique avec etoiles (element de la matrice)
-                this.setAnimationClass('magic-spinning');
+                // V10: la rotation magique dure TOUJOURS PAUSE_DURATION et
+                // fait UN SEUL tour lent (voir setMagicSpin) — le joueur
+                // compte sans ambiguite: 1 rotation = 1 unite de la matrice
+                duration = CONFIG.PAUSE_DURATION;
+                this.setMagicSpin(duration);
                 this.startStars(this.manWrapper, duration, 2);
                 this.startStars(this.womanWrapper, duration, 2);
                 break;
@@ -358,7 +360,7 @@ class Couple {
                 this.radius = this.radiusClose;
                 duration = CONFIG.PAUSE_DURATION;
                 // V9: idem - rotation magique sur place (etat legacy)
-                this.setAnimationClass('magic-spinning');
+                this.setMagicSpin(duration);
                 this.startStars(this.manWrapper, duration, 2);
                 this.startStars(this.womanWrapper, duration, 2);
                 break;
@@ -418,6 +420,22 @@ class Couple {
                 this.startStars(this.manWrapper, duration);
                 this.startStars(this.womanWrapper, duration);
                 break;
+
+            // V10: SORTIE PERPENDICULAIRE apres un croisement — la roue fait
+            // un quart de tour pendant que le rayon repasse au grand cercle:
+            // chaque danseur quitte le centre sur la ligne perpendiculaire a
+            // celle d'entree, dans des sens opposes (jamais tout droit).
+            case STATE.P:
+                this.radius = this.radiusFar;
+                this.wheelAngle += 90;
+                this.setAnimationClass('translating');
+                break;
+
+            case STATE.Q:
+                this.radius = this.radiusFar;
+                this.wheelAngle -= 90;
+                this.setAnimationClass('translating');
+                break;
         }
 
         // V8: la rotation de croisement (H) est plus lente que la normale
@@ -473,6 +491,16 @@ class Couple {
             this.manWrapper.classList.remove(cls);
             this.womanWrapper.classList.remove(cls);
         });
+    }
+
+    // V10: rotation magique = UN SEUL tour complet, tres lent, etale sur
+    // toute la duree de l'etat. L'animation CSS lit --magic-dur et ne joue
+    // qu'UNE iteration: impossible de confondre 1 rotation avec un cycle.
+    setMagicSpin(durationMs) {
+        [this.manWrapper, this.womanWrapper].forEach(w => {
+            w.style.setProperty('--magic-dur', durationMs + 'ms');
+        });
+        this.setAnimationClass('magic-spinning');
     }
 
     setAnimationClass(className) {
@@ -679,13 +707,11 @@ class PizzicaGame {
     }
 
     stopAllAudio() {
-        for (let i = 1; i <= CONFIG.MAX_LEVEL; i++) {
-            const audio = document.getElementById(`audio-level-${i}`);
-            if (audio) {
-                audio.pause();
-                audio.currentTime = 0;
-            }
-        }
+        // V10: 3 pistes partagees par les 9 livelli
+        document.querySelectorAll('audio[id^="audio-level-"]').forEach(audio => {
+            audio.pause();
+            audio.currentTime = 0;
+        });
     }
 
     playLevelMusic() {
@@ -714,7 +740,7 @@ class PizzicaGame {
             this.levelDisplayGame.textContent = levelText;
         }
         this.musicInfo.textContent = `${levelInfo.music}`;
-        this.demoLevelInfo.textContent = `Livello ${this.currentLevel} - Durata: ${levelInfo.duration}s`;
+        this.demoLevelInfo.textContent = `Livello ${this.currentLevel} - Durata: ${levelInfo.duration}s - ${levelInfo.tiles} coppie`;
     }
 
     // V9: selecteur de personnages sur l'ecran d'accueil
@@ -759,7 +785,13 @@ class PizzicaGame {
         this.danceFloor.innerHTML = '';
         this.couples = [];
 
-        for (let i = 0; i < CONFIG.TILE_COUNT; i++) {
+        // V10: 2 carreaux (Principiante), 3 (Intermedio) ou 4 (Avanzato).
+        // La classe tiles-N pilote la grille CSS.
+        const tileCount = tilesForLevel(this.currentLevel);
+        this.danceFloor.classList.remove('tiles-2', 'tiles-3', 'tiles-4');
+        this.danceFloor.classList.add(`tiles-${tileCount}`);
+
+        for (let i = 0; i < tileCount; i++) {
             const tile = document.createElement('div');
             tile.className = 'tile';
             tile.id = `tile-${i}`;
@@ -1026,7 +1058,7 @@ class PizzicaGame {
             this.gameStatus.textContent = 'Trova la coppia corretta!';
         }
 
-        this.correctTileId = Math.floor(Math.random() * CONFIG.TILE_COUNT);
+        this.correctTileId = Math.floor(Math.random() * tilesForLevel(this.currentLevel));
 
         console.log('Correct tile ID:', this.correctTileId);
 
@@ -1053,49 +1085,44 @@ class PizzicaGame {
         const commonTrunkLength = Math.min(3, Math.max(2, Math.floor(correctSeq.length * 0.25)));
         const commonTrunk = correctSeq.slice(0, commonTrunkLength);
 
-        // Construire les 4 sequences avec divergence progressive
-        const sequences = [];
-
-        // TILE 1: Diverge en premier (apres le tronc commun)
-        const seq1 = this.buildDivergentSequence(commonTrunk, targetDuration, 'early');
-        sequences.push(seq1);
-
-        // TILES 2, 3, 4: Partagent un segment commun supplementaire
         const midTrunkLength = Math.min(
             correctSeq.length - 2,
             commonTrunkLength + Math.max(1, Math.floor(correctSeq.length * 0.2))
         );
         const midTrunk = correctSeq.slice(0, midTrunkLength);
 
-        // TILE 2: Diverge en second
-        const seq2 = this.buildDivergentSequence(midTrunk, targetDuration, 'mid');
-        sequences.push(seq2);
-
-        // TILES 3 & 4: Tres similaires, divergent presque a la fin
         const lateTrunkLength = Math.min(
             correctSeq.length - 1,
             midTrunkLength + Math.max(1, Math.floor(correctSeq.length * 0.3))
         );
         const lateTrunk = correctSeq.slice(0, lateTrunkLength);
 
-        const seq3 = this.buildDivergentSequence(lateTrunk, targetDuration, 'late');
-        const seq4 = this.buildDivergentSequence(lateTrunk, targetDuration, 'late', seq3); // Eviter seq3
+        // V10: nombre de sequences = nombre de carreaux du livello.
+        // 2 carreaux -> 1 erreur tardive (subtile); 3 -> mid + late;
+        // 4 -> early + mid + late (comportement historique).
+        const tileCount = tilesForLevel(this.currentLevel);
+        const profiles = {
+            2: [['late', lateTrunk]],
+            3: [['mid', midTrunk], ['late', lateTrunk]],
+            4: [['early', commonTrunk], ['mid', midTrunk], ['late', lateTrunk]]
+        }[tileCount] || [['early', commonTrunk], ['mid', midTrunk], ['late', lateTrunk]];
 
-        sequences.push(seq3);
-        sequences.push(seq4);
+        const sequences = profiles.map(([type, trunk]) =>
+            this.buildDivergentSequence(trunk, targetDuration, type));
 
-        // La sequence correcte est l'une des deux dernieres (3 ou 4)
-        const correctIndex = Math.random() < 0.5 ? 2 : 3;
-        sequences[correctIndex] = [...correctSeq];
+        // La bonne sequence est inseree a une position aleatoire
+        const correctIndex = Math.floor(Math.random() * tileCount);
+        sequences.splice(correctIndex, 0, [...correctSeq]);
         this.correctTileId = correctIndex;
 
         // Verification anti-doublons
         this.ensureUniqueSequences(sequences);
 
         console.log('=== DIVERGENCE PROGRESSIVE ===');
+        console.log(`Carreaux: ${tileCount}`);
         console.log('Tronc commun initial:', this.seqToString(commonTrunk));
-        console.log('Tronc median (tiles 2-4):', this.seqToString(midTrunk));
-        console.log('Tronc tardif (tiles 3-4):', this.seqToString(lateTrunk));
+        console.log('Tronc median:', this.seqToString(midTrunk));
+        console.log('Tronc tardif:', this.seqToString(lateTrunk));
         sequences.forEach((seq, i) => {
             console.log(`Tile ${i}: ${this.seqToString(seq)} ${i === this.correctTileId ? '✓ CORRECT' : ''}`);
         });
@@ -1350,8 +1377,8 @@ class PizzicaGame {
     // lockstep par index qui figeait les carreaux rapides jusqu'a 1s en
     // attendant les croisements (G=2800ms / H=3000ms) des autres.
     runAllSequences(allSequences) {
-        let remaining = CONFIG.TILE_COUNT;
-        for (let i = 0; i < CONFIG.TILE_COUNT; i++) {
+        let remaining = allSequences.length;
+        for (let i = 0; i < allSequences.length; i++) {
             const couple = this.couples[i];
             this.runSequence(couple, allSequences[i], 0, () => {
                 // V9: des que CE carreau a fini, danse d'attente (sans etoiles)
@@ -1774,7 +1801,9 @@ class PizzicaGame {
             [STATE.E]: 'Traslazione avanti',
             [STATE.F]: 'Traslazione indietro',
             [STATE.G]: 'Incrocio: giri alternati ✦',
-            [STATE.H]: 'Incrocio: rotazione insieme ✦'
+            [STATE.H]: 'Incrocio: rotazione insieme ✦',
+            [STATE.P]: 'Uscita perpendicolare (oraria) ⤵',
+            [STATE.Q]: 'Uscita perpendicolare (antioraria) ⤴'
         };
         return names[state] || 'Sconosciuto';
     }
