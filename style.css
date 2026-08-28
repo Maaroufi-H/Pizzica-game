@@ -293,6 +293,61 @@ body::before {
     margin-top: 5px;
 }
 
+/* ============================================
+   V9 - SELECTION DES PERSONNAGES
+   ============================================ */
+#char-select {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.char-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.char-label {
+    color: var(--neon-cyan);
+    font-size: 0.8rem;
+    width: 28px;
+    text-align: right;
+}
+
+button.char-thumb {
+    width: 52px;
+    height: 52px;
+    padding: 4px;
+    margin: 0;
+    border-radius: 12px;
+    background: rgba(22, 22, 58, 0.7);
+    border: 2px solid #5555ff;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+button.char-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+button.char-thumb.selected {
+    border-color: var(--neon-gold);
+    box-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+    transform: scale(1.08);
+}
+
+button.char-thumb:hover {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+    transform: scale(1.05);
+}
+
 /* Demo preview sur l'accueil - V7: agrandi pour englober completement les danseurs */
 #demo-preview {
     width: 260px;
@@ -706,6 +761,85 @@ button:disabled {
 @keyframes crossRotateSway {
     0%, 100% { transform: rotate(-18deg) scale(1.03); }
     50% { transform: rotate(18deg) scale(0.98); }
+}
+
+/* ============================================
+   V9 - JAMAIS FIGES
+   ============================================ */
+
+/* Rotation magique SUR PLACE (remplace les pauses figees): pirouette en
+   boucle avec etoiles - c'est un element de la sequence a part entiere */
+.dancer-wrapper.magic-spinning .dancer {
+    animation: magicSpin 1s linear infinite;
+}
+
+@keyframes magicSpin {
+    0% {
+        transform: rotateY(0deg) scale(1);
+        filter: brightness(1);
+    }
+    50% {
+        transform: rotateY(180deg) scale(1.05);
+        filter: brightness(1.4) drop-shadow(0 0 7px #ffd700);
+    }
+    100% {
+        transform: rotateY(360deg) scale(1);
+        filter: brightness(1);
+    }
+}
+
+/* Danse sur place (pendant que l'autre pirouette au croisement):
+   les jambes travaillent - bascule sur les pieds + petits sauts */
+.dancer-wrapper.dance-step .dancer {
+    animation: stepDance 0.5s ease-in-out infinite;
+}
+
+@keyframes stepDance {
+    0%, 100% { transform: rotate(-6deg) translateY(0) scaleY(1); }
+    25% { transform: rotate(0deg) translateY(-4px) scaleY(0.95); }
+    50% { transform: rotate(6deg) translateY(0) scaleY(1); }
+    75% { transform: rotate(0deg) translateY(-4px) scaleY(0.95); }
+}
+
+/* ============================================
+   V9 - DANSE PROPRE A CHAQUE PERSONNAGE
+   ============================================ */
+
+/* m2 - l'elegant au chapeau: petits bonds glisses, style levitation */
+.dancer-wrapper.dancing.char-m2 .dancer,
+.dancer-wrapper.dance-step.char-m2 .dancer {
+    animation: levitBounce 0.7s ease-in-out infinite;
+}
+
+@keyframes levitBounce {
+    0%, 100% { transform: translateY(0) rotate(-4deg) scaleY(1); }
+    25% { transform: translateY(-7px) rotate(0deg) scaleY(1.05); }
+    50% { transform: translateY(0) rotate(4deg) scaleY(0.97); }
+    75% { transform: translateY(-7px) rotate(0deg) scaleY(1.05); }
+}
+
+/* w2 - la fee: voltige rapide, battements d'ailes */
+.dancer-wrapper.dancing.char-w2 .dancer,
+.dancer-wrapper.dance-step.char-w2 .dancer {
+    animation: fairyFlutter 0.45s ease-in-out infinite;
+}
+
+@keyframes fairyFlutter {
+    0%, 100% { transform: rotate(-7deg) translateY(0) scaleX(1); }
+    50% { transform: rotate(7deg) translateY(-6px) scaleX(1.06); }
+}
+
+/* m1/w1 - danse classique: bascule marquee sur les pieds, jambes vivantes */
+.dancer-wrapper.dancing.char-m1 .dancer,
+.dancer-wrapper.dancing.char-w1 .dancer {
+    animation: classicStep 0.55s ease-in-out infinite;
+}
+
+@keyframes classicStep {
+    0%, 100% { transform: rotate(-5deg) translateY(0) scaleY(1); }
+    25% { transform: rotate(0deg) translateY(-3px) scaleY(0.96); }
+    50% { transform: rotate(5deg) translateY(0) scaleY(1); }
+    75% { transform: rotate(0deg) translateY(-3px) scaleY(0.96); }
 }
 
 /* Petites etoiles scintillantes emises pendant les rotations de croisement,

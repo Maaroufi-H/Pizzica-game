@@ -68,6 +68,33 @@ const LEVELS = {
 };
 
 // ============================================
+// V9: PERSONNAGES SELECTIONNABLES (2 hommes, 2 femmes)
+// Chaque personnage a sa propre danse (classe char-<id> sur le wrapper,
+// animations dediees en CSS). Choix memorise en localStorage.
+// ============================================
+const CHARACTERS = {
+    man: [
+        { id: 'm1', img: 'm1.png', name: 'Ballerino classico' },
+        { id: 'm2', img: 'm2.png', name: 'Elegante col cappello' }
+    ],
+    woman: [
+        { id: 'w1', img: 'w1.png', name: 'Ballerina in rosso' },
+        { id: 'w2', img: 'w2.png', name: 'Fata danzante' }
+    ]
+};
+
+const selectedChars = { man: 'm1', woman: 'w1' };
+try {
+    const saved = JSON.parse(localStorage.getItem('pizzica-chars') || '{}');
+    if (CHARACTERS.man.some(c => c.id === saved.man)) selectedChars.man = saved.man;
+    if (CHARACTERS.woman.some(c => c.id === saved.woman)) selectedChars.woman = saved.woman;
+} catch (e) { /* localStorage indisponible: defauts */ }
+
+function getChar(role) {
+    return CHARACTERS[role].find(c => c.id === selectedChars[role]) || CHARACTERS[role][0];
+}
+
+// ============================================
 // DEFINITION DES ETATS
 // ============================================
 const STATE = {
@@ -263,22 +290,24 @@ class Couple {
         this.wheel = document.createElement('div');
         this.wheel.className = 'couple-wheel';
 
+        // V9: personnages selectionnes, chacun avec sa propre danse
+        const manChar = getChar('man');
+        const womanChar = getChar('woman');
+
         this.manWrapper = document.createElement('div');
-        this.manWrapper.className = 'dancer-wrapper man-wrapper';
+        this.manWrapper.className = `dancer-wrapper man-wrapper char-${manChar.id}`;
         const manImg = document.createElement('img');
-        // Images dans le meme dossier
-        manImg.src = 'man.png';
+        manImg.src = manChar.img;
         manImg.className = 'dancer';
-        manImg.alt = 'Man';
+        manImg.alt = manChar.name;
         this.manWrapper.appendChild(manImg);
 
         this.womanWrapper = document.createElement('div');
-        this.womanWrapper.className = 'dancer-wrapper woman-wrapper';
+        this.womanWrapper.className = `dancer-wrapper woman-wrapper char-${womanChar.id}`;
         const womanImg = document.createElement('img');
-        // Images dans le meme dossier
-        womanImg.src = 'woman.png';
+        womanImg.src = womanChar.img;
         womanImg.className = 'dancer';
-        womanImg.alt = 'Woman';
+        womanImg.alt = womanChar.name;
         this.womanWrapper.appendChild(womanImg);
 
         this.wheel.appendChild(this.manWrapper);
@@ -318,15 +347,20 @@ class Couple {
                 if (prevState === STATE.D || prevState === STATE.F) {
                     duration = CONFIG.PAUSE_DURATION;
                 }
-                // V6 PRO: ETAT STATIQUE - agiter les bras (2 secondes)
-                this.setAnimationClass('static-state');
+                // V9: JAMAIS figes - sur place, les deux danseurs font la
+                // rotation magique avec etoiles (element de la matrice)
+                this.setAnimationClass('magic-spinning');
+                this.startStars(this.manWrapper, duration, 2);
+                this.startStars(this.womanWrapper, duration, 2);
                 break;
 
             case STATE.D:
                 this.radius = this.radiusClose;
                 duration = CONFIG.PAUSE_DURATION;
-                // V6 PRO: ETAT STATIQUE - agiter les bras (2 secondes)
-                this.setAnimationClass('static-state');
+                // V9: idem - rotation magique sur place (etat legacy)
+                this.setAnimationClass('magic-spinning');
+                this.startStars(this.manWrapper, duration, 2);
+                this.startStars(this.womanWrapper, duration, 2);
                 break;
 
             case STATE.E:
@@ -358,13 +392,15 @@ class Couple {
             case STATE.G: {
                 this.radius = this.radiusClose;
                 duration = CONFIG.CROSS_SPIN_DURATION * 2;
+                // V9: celui qui ne pirouette pas DANSE sur place (jambes qui
+                // travaillent) - personne n'est jamais immobile
                 this.manWrapper.classList.add('cross-spinning');
-                this.womanWrapper.classList.add('static-state');
+                this.womanWrapper.classList.add('dance-step');
                 this.startStars(this.manWrapper, CONFIG.CROSS_SPIN_DURATION);
                 const swap = setTimeout(() => {
                     this.manWrapper.classList.remove('cross-spinning');
-                    this.manWrapper.classList.add('static-state');
-                    this.womanWrapper.classList.remove('static-state');
+                    this.manWrapper.classList.add('dance-step');
+                    this.womanWrapper.classList.remove('dance-step');
                     this.womanWrapper.classList.add('cross-spinning');
                     this.startStars(this.womanWrapper, CONFIG.CROSS_SPIN_DURATION);
                 }, CONFIG.CROSS_SPIN_DURATION);
@@ -393,9 +429,9 @@ class Couple {
 
     // V8: emission continue de petites etoiles scintillantes pendant une
     // rotation de croisement; elles s'estompent d'elles-memes (starPop)
-    startStars(wrapper, totalMs) {
+    startStars(wrapper, totalMs, perBurst = 3) {
         const spawn = () => {
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < perBurst; i++) {
                 const s = document.createElement('span');
                 s.className = 'cross-star';
                 s.textContent = '✦';
@@ -431,7 +467,8 @@ class Couple {
         // V8: stopper aussi les phases de croisement et l'emission d'etoiles
         this.clearInternalTimers();
         const classes = ['dancing', 'rotating', 'translating', 'close', 'flip',
-            'static-state', 'cross-spinning', 'cross-rotating'];
+            'static-state', 'cross-spinning', 'cross-rotating',
+            'magic-spinning', 'dance-step'];
         classes.forEach(cls => {
             this.manWrapper.classList.remove(cls);
             this.womanWrapper.classList.remove(cls);
@@ -566,6 +603,7 @@ class PizzicaGame {
 
         // Initialisation
         this.updateLevelDisplay();
+        this.buildCharSelect();
         this.createPreviewCouple();
 
         // V7: re-mesurer la geometrie de tous les couples vivants
@@ -677,6 +715,33 @@ class PizzicaGame {
         }
         this.musicInfo.textContent = `${levelInfo.music}`;
         this.demoLevelInfo.textContent = `Livello ${this.currentLevel} - Durata: ${levelInfo.duration}s`;
+    }
+
+    // V9: selecteur de personnages sur l'ecran d'accueil
+    buildCharSelect() {
+        document.querySelectorAll('#char-select .char-row').forEach(row => {
+            const role = row.dataset.role;
+            row.querySelectorAll('.char-thumb').forEach(b => b.remove());
+            CHARACTERS[role].forEach(ch => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'char-thumb' + (selectedChars[role] === ch.id ? ' selected' : '');
+                btn.title = ch.name;
+                const img = document.createElement('img');
+                img.src = ch.img;
+                img.alt = ch.name;
+                btn.appendChild(img);
+                btn.addEventListener('click', () => {
+                    selectedChars[role] = ch.id;
+                    try {
+                        localStorage.setItem('pizzica-chars', JSON.stringify(selectedChars));
+                    } catch (e) { /* mode prive */ }
+                    this.buildCharSelect();
+                    this.createPreviewCouple();
+                });
+                row.appendChild(btn);
+            });
+        });
     }
 
     createPreviewCouple() {
@@ -1363,7 +1428,13 @@ class PizzicaGame {
 
         document.querySelectorAll('.tile').forEach(t => t.classList.remove('disco-active'));
 
-        this.couples.forEach(c => c.transitionTo(STATE.C));
+        // V9: en attente du clic, les danseurs continuent a danser sur place
+        // (jamais figes, mais sans etoiles - la sequence est terminee)
+        this.couples.forEach(c => {
+            c.transitionTo(STATE.C);
+            c.stopAnimations();
+            c.setAnimationClass('dancing');
+        });
     }
 
     handleTileClick(tileId) {
@@ -1694,8 +1765,8 @@ class PizzicaGame {
         const names = {
             [STATE.A]: 'Rotazione avanti',
             [STATE.B]: 'Rotazione indietro',
-            [STATE.C]: 'Posizione lontana',
-            [STATE.D]: 'Posizione vicina',
+            [STATE.C]: 'Piroetta sul posto ✦ (lontani)',
+            [STATE.D]: 'Piroetta sul posto ✦ (vicini)',
             [STATE.E]: 'Traslazione avanti',
             [STATE.F]: 'Traslazione indietro',
             [STATE.G]: 'Incrocio: giri alternati ✦',
