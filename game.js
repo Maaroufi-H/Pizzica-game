@@ -380,12 +380,14 @@ class Couple {
             case STATE.A:
                 this.wheelAngle += 180;
                 // V6 PRO: Animation rotation - mouvement expressif
+                this.setSpinDuration(CONFIG.MOVE_DURATION);
                 this.setAnimationClass('rotating');
                 break;
 
             case STATE.B:
                 this.wheelAngle -= 180;
                 // V6 PRO: Animation rotation - mouvement expressif
+                this.setSpinDuration(CONFIG.MOVE_DURATION);
                 this.setAnimationClass('rotating');
                 break;
 
@@ -416,6 +418,7 @@ class Couple {
                 this.radius = this.radiusClose;
                 this.wheelAngle += 180;
                 duration = CONFIG.CROSS_ROTATE_DURATION;
+                this.setSpinDuration(CONFIG.CROSS_ROTATE_DURATION);
                 this.setAnimationClass('cross-rotating');
                 this.startStars(this.manWrapper, duration);
                 this.startStars(this.womanWrapper, duration);
@@ -425,16 +428,22 @@ class Couple {
             // un quart de tour pendant que le rayon repasse au grand cercle:
             // chaque danseur quitte le centre sur la ligne perpendiculaire a
             // celle d'entree, dans des sens opposes (jamais tout droit).
+            // V10.1: P/Q sont des mouvements CIRCULAIRES (quart de tour sur
+            // le cercle) - en mode circulaire les danseurs tournent TOUJOURS
+            // sur eux-memes ('rotating', comme A/B). Seules les translations
+            // pures sur les lignes transversales (E/F) ne pirouettent pas.
             case STATE.P:
                 this.radius = this.radiusFar;
                 this.wheelAngle += 90;
-                this.setAnimationClass('translating');
+                this.setSpinDuration(CONFIG.MOVE_DURATION);
+                this.setAnimationClass('rotating');
                 break;
 
             case STATE.Q:
                 this.radius = this.radiusFar;
                 this.wheelAngle -= 90;
-                this.setAnimationClass('translating');
+                this.setSpinDuration(CONFIG.MOVE_DURATION);
+                this.setAnimationClass('rotating');
                 break;
         }
 
@@ -501,6 +510,13 @@ class Couple {
             w.style.setProperty('--magic-dur', durationMs + 'ms');
         });
         this.setAnimationClass('magic-spinning');
+    }
+
+    // V10.1: cale la duree du tour sur soi sur celle du mouvement circulaire
+    // (un quart/demi-tour sur le cercle = un tour complet sur soi)
+    setSpinDuration(ms) {
+        this.manWrapper.style.setProperty('--spin-dur', ms + 'ms');
+        this.womanWrapper.style.setProperty('--spin-dur', ms + 'ms');
     }
 
     setAnimationClass(className) {

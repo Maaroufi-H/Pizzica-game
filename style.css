@@ -611,14 +611,12 @@ button:disabled {
     animation: armWave 0.5s ease-in-out infinite;
 }
 
-/* Animation pendant rotation - mouvement expressif AVEC INCLINAISON 20-30% - 3X PLUS LENT */
-.dancer-wrapper.rotating .dancer {
-    animation: dancerSpin 1.2s ease-in-out infinite;
-}
-
-/* V6 PRO: Animation FLIP pour TOUS les niveaux - retournement comme piece de monnaie */
+/* V10.1: MODE CIRCULAIRE = le danseur tourne TOUJOURS sur lui-meme.
+   La duree du tour est calee sur celle du mouvement (--spin-dur), donc un
+   quart/demi-tour sur le cercle = exactement un tour sur soi, comptable. */
+.dancer-wrapper.rotating .dancer,
 .dancer-wrapper.rotating.flip .dancer {
-    animation: dancerFlip 1.8s ease-in-out infinite;
+    animation: dancerFlip var(--spin-dur, 2250ms) ease-in-out infinite;
 }
 
 /* Animation pendant translation - pas de danse */
@@ -667,17 +665,7 @@ button:disabled {
     }
 }
 
-/* Mouvement de rotation expressif - INCLINAISON FORTE 20-30% */
-@keyframes dancerSpin {
-    0%, 100% {
-        transform: rotate(-25deg) scale(1.02) skewY(-5deg);
-    }
-    50% {
-        transform: rotate(25deg) scale(0.98) skewY(5deg);
-    }
-}
-
-/* V6 PRO: Animation FLIP niveau 3+ - retournement 3D comme piece */
+/* V6 PRO: Animation FLIP - retournement 3D comme piece */
 @keyframes dancerFlip {
     0% {
         transform: rotateY(0deg) scale(1);
@@ -783,15 +771,12 @@ button:disabled {
     }
 }
 
-/* Rotation croisee a deux autour du petit cercle (etat H), ralentie */
+/* Rotation croisee a deux autour du petit cercle (etat H): circulaire, donc
+   les danseurs tournent aussi sur eux-memes - ralenti et dore pour se
+   distinguer de la rotation habituelle (les etoiles viennent du JS) */
 .dancer-wrapper.cross-rotating .dancer {
-    animation: crossRotateSway 1.5s ease-in-out infinite;
+    animation: dancerFlip var(--spin-dur, 3000ms) ease-in-out infinite;
     filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
-}
-
-@keyframes crossRotateSway {
-    0%, 100% { transform: rotate(-18deg) scale(1.03); }
-    50% { transform: rotate(18deg) scale(0.98); }
 }
 
 /* ============================================
@@ -1375,7 +1360,7 @@ button:disabled {
 }
 
 /* V9: telephones courts en portrait - tout doit tenir au-dessus du pli */
-@media (max-width: 768px) and (max-height: 700px) and (orientation: portrait) {
+@media (max-width: 768px) and (max-height: 800px) and (orientation: portrait) {
     #instructions-panel { padding: 6px; margin-bottom: 8px; }
     #instructions-panel h3 { font-size: 0.7rem; margin-bottom: 5px; padding-bottom: 4px; }
     .instruction-item { gap: 5px; margin-bottom: 4px; }
