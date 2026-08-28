@@ -1268,7 +1268,11 @@ button:disabled {
 
     #game-header h1 { font-size: 1.5rem; letter-spacing: 2px; }
     #level-display { font-size: 0.95rem; }
-    #demo-preview { width: min(220px, 30vh); height: min(220px, 30vh); }
+    #demo-preview { width: min(200px, 24vh); height: min(200px, 24vh); }
+
+    /* V9: selecteur compact pour que tout tienne au-dessus du pli */
+    #char-select { gap: 4px; margin-bottom: 2px; }
+    button.char-thumb { width: 44px; height: 44px; padding: 3px; }
 
     button { padding: 12px 30px; font-size: 1rem; }
 
@@ -1321,7 +1325,8 @@ button:disabled {
     .instruction-item.warning { padding: 4px; }
 
     #game-header h1 { font-size: 1.3rem; }
-    #demo-preview { width: min(200px, 30vh); height: min(200px, 30vh); }
+    #demo-preview { width: min(180px, 22vh); height: min(180px, 22vh); }
+    button.char-thumb { width: 40px; height: 40px; padding: 3px; }
 
     /* V7: pleine occupation de l'ecran Android (>80%) */
     #dance-floor {
@@ -1336,13 +1341,36 @@ button:disabled {
     #demo-progress { width: min(200px, 62vw); }
 }
 
+/* V9: telephones courts en portrait - tout doit tenir au-dessus du pli */
+@media (max-width: 768px) and (max-height: 700px) and (orientation: portrait) {
+    #instructions-panel { padding: 6px; margin-bottom: 8px; }
+    #instructions-panel h3 { font-size: 0.7rem; margin-bottom: 5px; padding-bottom: 4px; }
+    .instruction-item { gap: 5px; margin-bottom: 4px; }
+    .instruction-item p { font-size: 0.55rem; line-height: 1.15; }
+    .instruction-item .icon { width: 13px; height: 13px; font-size: 0.5rem; }
+    .instruction-item.warning { padding: 3px; margin: 4px 0; }
+    #home-screen { padding-top: 8px; }
+    #game-header { margin-bottom: 6px; }
+    #game-header h1 { font-size: 1.2rem; margin-bottom: 3px; }
+    #school-name { font-size: 0.8rem; margin-bottom: 2px; }
+    #level-display { font-size: 0.85rem; }
+    #music-info { font-size: 0.75rem; margin-top: 2px; }
+    #demo-preview { width: min(150px, 20vh); height: min(150px, 20vh); margin: 8px 0; }
+    #status-text { font-size: 0.8rem; margin: 4px 0; }
+    button.char-thumb { width: 38px; height: 38px; padding: 2px; }
+    #btn-play { padding: 10px 32px; font-size: 1rem; }
+}
+
 /* Landscape mobile */
 @media (max-height: 500px) and (orientation: landscape) {
     #instructions-panel { display: none; }
 
-    #home-main { flex-direction: row; gap: 20px; }
+    #home-main { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 14px; }
     #game-header { margin-bottom: 0; }
-    #demo-preview { width: min(180px, 42vh); height: min(180px, 42vh); }
+    /* V9: le carreau ne doit pas etre ecrase par le flex en paysage */
+    #demo-preview { flex: 0 0 auto; width: min(150px, 40vh); height: min(150px, 40vh); }
+    button.char-thumb { width: 40px; height: 40px; padding: 3px; }
+    .char-label { width: 22px; font-size: 0.7rem; }
 
     /* V7: paysage - les carreaux dominent l'ecran */
     #game-ui-small { display: none; }

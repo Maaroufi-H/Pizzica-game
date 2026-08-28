@@ -750,6 +750,9 @@ class PizzicaGame {
         if (existingWheel) existingWheel.remove();
 
         this.previewCouple = new Couple(this.demoPreview, 'preview', true, this.currentLevel);
+        // V9: le preview danse tout de suite - c'est ici qu'on voit la danse
+        // propre au personnage selectionne
+        this.previewCouple.setAnimationClass('dancing');
     }
 
     createDanceFloor() {
@@ -1349,7 +1352,13 @@ class PizzicaGame {
     runAllSequences(allSequences) {
         let remaining = CONFIG.TILE_COUNT;
         for (let i = 0; i < CONFIG.TILE_COUNT; i++) {
-            this.runSequence(this.couples[i], allSequences[i], 0, () => {
+            const couple = this.couples[i];
+            this.runSequence(couple, allSequences[i], 0, () => {
+                // V9: des que CE carreau a fini, danse d'attente (sans etoiles)
+                // - sinon la piroette magique infinie du C final se lirait
+                // comme des elements de sequence supplementaires
+                couple.stopAnimations();
+                couple.setAnimationClass('dancing');
                 remaining--;
                 if (remaining === 0) this.finishGame();
             });
@@ -1428,13 +1437,8 @@ class PizzicaGame {
 
         document.querySelectorAll('.tile').forEach(t => t.classList.remove('disco-active'));
 
-        // V9: en attente du clic, les danseurs continuent a danser sur place
-        // (jamais figes, mais sans etoiles - la sequence est terminee)
-        this.couples.forEach(c => {
-            c.transitionTo(STATE.C);
-            c.stopAnimations();
-            c.setAnimationClass('dancing');
-        });
+        // V9: les couples sont deja en danse d'attente (bascule par carreau
+        // dans runAllSequences des la fin de chaque sequence)
     }
 
     handleTileClick(tileId) {
