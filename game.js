@@ -28,6 +28,8 @@ const CONFIG = {
     CROSS_SPIN_DURATION: 1400,
     CROSS_ROTATE_DURATION: 3000,
     MAX_CROSS_MOVES: 2,
+    // V12: pause au moment de la divergence (analyse d'erreur)
+    DIVERGENCE_PAUSE: 2000,
     // V10: le nombre de carreaux depend du livello (2/3/4) — voir LEVELS
     TILE_COUNT: 4,
     MAX_LEVEL: 9
@@ -68,14 +70,19 @@ const CHARACTERS = {
         { id: 'm2', img: 'm2.png', name: 'Elegante col cappello' }
     ],
     woman: [
+        // V12: emoji 💃 ANIME (Noto/Lottie converti en sprite): gambe e
+        // braccia lavorano davvero. Danseuse par defaut.
+        { id: 'w3', img: 'w3.webp', name: 'Ballerina animata' },
         { id: 'w1', img: 'w1.png', name: 'Ballerina in rosso' },
         { id: 'w2', img: 'w2.png', name: 'Fata danzante' }
     ]
 };
 
-const selectedChars = { man: 'm1', woman: 'w1' };
+const selectedChars = { man: 'm1', woman: 'w3' };
 try {
-    const saved = JSON.parse(localStorage.getItem('pizzica-chars') || '{}');
+    // V12: cle versionnee - la nouvelle danseuse animee est visible d'emblee
+    // meme si une version precedente avait deja memorise un choix
+    const saved = JSON.parse(localStorage.getItem('pizzica-chars-v12') || '{}');
     if (CHARACTERS.man.some(c => c.id === saved.man)) selectedChars.man = saved.man;
     if (CHARACTERS.woman.some(c => c.id === saved.woman)) selectedChars.woman = saved.woman;
 } catch (e) { /* localStorage indisponible: defauts */ }
@@ -146,17 +153,37 @@ const STATE_DURATION = {
     [STATE.Q]: CONFIG.MOVE_DURATION
 };
 
+// V12: angle cumule par la roue pendant le bloc de croisement en cours.
+// G (pirouettes alternees) ne fait pas tourner la roue, H (rotation a deux)
+// l'avance de 180 deg et ECHANGE donc les positions des deux danseurs.
+function crossAngleDelta(sequence) {
+    let delta = 0;
+    for (let i = sequence.length - 1; i >= 0 && isCrossState(sequence[i]); i--) {
+        if (sequence[i] === STATE.H) delta += 180;
+    }
+    return ((delta % 360) + 360) % 360;
+}
+
 // V8: filtre les transitions pour ne jamais depasser MAX_CROSS_MOVES
 // croisements consecutifs (la sequence doit alors se separer via F)
+// V12: apres un croisement, chaque danseur doit repartir dans un sens
+// DIFFERENT de celui de son arrivee. Il arrive vers le centre a l'angle T;
+// il repart vers l'exterieur a l'angle T+delta. Repartir "tout droit"
+// (meme sens que l'arrivee) correspond exactement a delta = 180, c'est a
+// dire un nombre IMPAIR de rotations H: dans ce cas la sortie radiale F est
+// interdite et il faut sortir par la perpendiculaire (P/Q).
 function allowedNextStates(sequence, currentState) {
-    const valid = VALID_TRANSITIONS[currentState];
+    let valid = VALID_TRANSITIONS[currentState];
     if (!isCrossState(currentState)) return valid;
     let consecutive = 0;
     for (let i = sequence.length - 1; i >= 0 && isCrossState(sequence[i]); i--) {
         consecutive++;
     }
     if (consecutive >= CONFIG.MAX_CROSS_MOVES) {
-        return valid.filter(s => !isCrossState(s));
+        valid = valid.filter(s => !isCrossState(s));
+    }
+    if (crossAngleDelta(sequence) === 180) {
+        valid = valid.filter(s => s !== STATE.F);
     }
     return valid;
 }
@@ -629,6 +656,7 @@ class PizzicaGame {
         this.comparisonMessage = document.getElementById('comparison-message');
         this.btnComparisonRetry = document.getElementById('btn-comparison-retry');
         this.btnComparisonReplay = document.getElementById('btn-comparison-replay');
+        this.divergenceNotice = document.getElementById('divergence-notice');
 
         // Track user selection for error analysis
         this.userSelectedTileId = null;
@@ -776,7 +804,7 @@ class PizzicaGame {
                 btn.addEventListener('click', () => {
                     selectedChars[role] = ch.id;
                     try {
-                        localStorage.setItem('pizzica-chars', JSON.stringify(selectedChars));
+                        localStorage.setItem('pizzica-chars-v12', JSON.stringify(selectedChars));
                     } catch (e) { /* mode prive */ }
                     this.buildCharSelect();
                     this.createPreviewCouple();
@@ -858,7 +886,32 @@ class PizzicaGame {
         // Jouer la musique
         this.playLevelMusic();
 
-        // V6 PRO: Countdown de 3 secondes AVANT la demo
+        // V12: la SCENE de depart est montee AVANT le countdown - le joueur
+        // voit deja les danseurs en position initiale pendant le 3-2-1
+        this.prepareDemoStage();
+
+        this.runCountdown(() => this.startDemoSequence());
+    }
+
+    /**
+     * V12: monte la scene de la demo (overlay + couple en position de depart).
+     * Appelee AVANT le countdown pour qu'il s'affiche par-dessus la scene,
+     * jamais par-dessus la page d'accueil.
+     */
+    prepareDemoStage() {
+        this.homeScreen.style.display = 'none';
+        this.gameScreen.style.display = 'none';
+        this.demoOverlay.style.display = 'flex';
+        this.createDemoCouple();
+        // les danseurs dansent sur place en attendant le GO
+        this.demoCouple.setAnimationClass('dancing');
+        this.progressBar.style.width = '0%';
+        this.demoTimer.textContent = LEVELS[this.currentLevel].duration;
+    }
+
+    /** V12: countdown 3-2-1 mutualise (toujours par-dessus la scene en place) */
+    runCountdown(onDone) {
+        if (this.btnReplay) this.btnReplay.disabled = true;
         this.countdown.style.display = 'block';
         let count = 3;
         this.countdown.textContent = count;
@@ -870,19 +923,16 @@ class PizzicaGame {
             } else {
                 clearInterval(countInterval);
                 this.countdown.style.display = 'none';
-                this.startDemoSequence();
+                if (this.btnReplay) this.btnReplay.disabled = false;
+                onDone();
             }
         }, 1000);
+        this.countdownInterval = countInterval;
     }
 
     startDemoSequence() {
-        // V7: masquer l'accueil (sinon il transparait a travers l'overlay
-        // desormais transparent), puis afficher l'overlay AVANT de creer le
-        // couple (la taille du carreau doit etre mesurable)
-        this.homeScreen.style.display = 'none';
-        this.demoOverlay.style.display = 'flex';
-        this.createDemoCouple();
-
+        // V12: la scene est deja montee par prepareDemoStage()
+        this.demoCouple.stopAnimations();
         this.progressBar.style.width = '0%';
 
         // V6 PRO: Demarrer le timer visible
@@ -901,21 +951,12 @@ class PizzicaGame {
         // V6 PRO: Annuler toutes sequences en cours avant de rejouer
         this.cancelAllSequences();
 
-        // V6 PRO: Countdown de 3 secondes avant de rejouer la demo
-        this.countdown.style.display = 'block';
-        let count = 3;
-        this.countdown.textContent = count;
+        // V12: remettre les danseurs en position de depart AVANT le countdown
+        this.demoCouple.reset();
+        this.progressBar.style.width = '0%';
+        this.demoTimer.textContent = LEVELS[this.currentLevel].duration;
 
-        const countInterval = setInterval(() => {
-            count--;
-            if (count > 0) {
-                this.countdown.textContent = count;
-            } else {
-                clearInterval(countInterval);
-                this.countdown.style.display = 'none';
-                this.replayDemoSequence();
-            }
-        }, 1000);
+        this.runCountdown(() => this.replayDemoSequence());
     }
 
     replayDemoSequence() {
@@ -961,30 +1002,15 @@ class PizzicaGame {
         // Jouer la musique
         this.playLevelMusic();
 
-        // V6 PRO: Countdown de 3 secondes avant de montrer la demo
-        this.countdown.style.display = 'block';
-        let count = 3;
-        this.countdown.textContent = count;
+        // V12: scene montee AVANT le countdown
+        this.prepareDemoStage();
 
-        const countInterval = setInterval(() => {
-            count--;
-            if (count > 0) {
-                this.countdown.textContent = count;
-            } else {
-                clearInterval(countInterval);
-                this.countdown.style.display = 'none';
-                this.retryDemoSequence();
-            }
-        }, 1000);
+        this.runCountdown(() => this.retryDemoSequence());
     }
 
     retryDemoSequence() {
-        // Afficher la demo avec la MEME sequence
-        // V7: masquer l'ecran de jeu (les 4 carreaux transparaitraient),
-        // overlay visible d'abord, puis creation du couple (mesure de taille)
-        this.gameScreen.style.display = 'none';
-        this.demoOverlay.style.display = 'flex';
-        this.createDemoCouple();
+        // Rejouer la MEME sequence (scene deja montee par prepareDemoStage)
+        this.demoCouple.stopAnimations();
         this.progressBar.style.width = '0%';
 
         // V6 PRO: Redemarrer le timer
@@ -1724,28 +1750,49 @@ class PizzicaGame {
      * traques dans sequenceTimeouts pour etre annulables.
      */
     playDivergentStates(correctSeq, userSeq, divergenceIndex, startDelay) {
-        const tEcco = setTimeout(() => {
+        const notice = this.divergenceNotice;
+        const setNotice = (html, cls) => {
+            if (!notice) return;
+            notice.className = cls || '';
+            notice.innerHTML = html;
+            notice.style.display = 'block';
+        };
+
+        // 1) MOMENT DE LA DIVERGENCE: notice en bas + les deux danses se
+        //    FIGENT pendant 2 secondes pour que le joueur voie ou ca se joue
+        const tFreeze = setTimeout(() => {
+            if (this.comparisonDemoCouple) this.comparisonDemoCouple.stopAnimations();
+            if (this.comparisonUserCouple) this.comparisonUserCouple.stopAnimations();
+
             this.eccoMessage.style.display = 'block';
             const tHide = setTimeout(() => {
                 this.eccoMessage.style.display = 'none';
             }, 600);
             this.sequenceTimeouts.push(tHide);
-            this.comparisonMessage.innerHTML = `<strong>ECCO L'ERRORE!</strong>`;
-        }, startDelay + 500);
-        this.sequenceTimeouts.push(tEcco);
 
+            this.comparisonMessage.innerHTML = `<strong>ECCO L'ERRORE!</strong>`;
+            setNotice(`⚠ <strong>QUI le due sequenze si separano</strong> — movimento n. ${divergenceIndex + 1}. Guarda bene: prima quella giusta, poi la tua.`, 'notice-warn');
+        }, startDelay + 500);
+        this.sequenceTimeouts.push(tFreeze);
+
+        // 2) apres 2 secondes de pause: la sequence ORIGINALE, un seul etat
         const tDemo = setTimeout(() => {
             if (!this.comparisonDemoCouple) return;
+            setNotice(`✓ <strong>SEQUENZA CORRETTA</strong>: ${this.getStateName(correctSeq[divergenceIndex])}`, 'notice-ok');
+
             let demoDur = CONFIG.MOVE_DURATION;
             if (divergenceIndex < correctSeq.length) {
                 demoDur = this.comparisonDemoCouple.transitionTo(correctSeq[divergenceIndex]);
             }
 
+            // 3) puis la sequence CHOISIE PAR LE JOUEUR, un seul etat
             const tUser = setTimeout(() => {
                 if (this.comparisonDemoCouple) {
                     this.comparisonDemoCouple.stopAnimations();
                 }
                 if (!this.comparisonUserCouple) return;
+                setNotice(`✗ <strong>LA TUA SCELTA</strong>: ${this.getStateName(userSeq[divergenceIndex])}`, 'notice-bad');
+
                 let userDur = CONFIG.MOVE_DURATION;
                 if (divergenceIndex < userSeq.length) {
                     userDur = this.comparisonUserCouple.transitionTo(userSeq[divergenceIndex]);
@@ -1761,6 +1808,7 @@ class PizzicaGame {
                         ✗ Tua scelta: <span style="color: #ff4444;">${userStateName}</span><br>
                         <span style="font-size: 0.9rem; color: #aaa;">Osserva bene la differenza!</span>
                     `;
+                    setNotice(`Rivedi la differenza col pulsante qui sopra, oppure riprova!`, '');
 
                     if (this.comparisonUserCouple) {
                         this.comparisonUserCouple.stopAnimations();
@@ -1770,7 +1818,7 @@ class PizzicaGame {
                 this.sequenceTimeouts.push(tEnd);
             }, demoDur + 250);
             this.sequenceTimeouts.push(tUser);
-        }, startDelay + 1500);
+        }, startDelay + 500 + CONFIG.DIVERGENCE_PAUSE);
         this.sequenceTimeouts.push(tDemo);
     }
 
@@ -1827,6 +1875,9 @@ class PizzicaGame {
     closeComparisonAndRetry() {
         // Fermer la comparaison
         this.comparisonOverlay.style.display = 'none';
+
+        // V12: masquer la notice de divergence
+        if (this.divergenceNotice) this.divergenceNotice.style.display = 'none';
 
         // Nettoyer les couples de comparaison
         // V8: stopper leurs timers internes (etoiles, phases G) AVANT de

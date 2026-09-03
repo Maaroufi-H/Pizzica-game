@@ -64,7 +64,7 @@
             </div>
             <div class="instruction-item warning">
                 <span class="icon">!</span>
-                <p><strong>ATTENZIONE:</strong> Anche le <em>piroette magiche</em> ✦ sul posto fanno parte della sequenza!</p>
+                <p><strong>ATTENZIONE:</strong> quando i danzatori restano sul posto e <em>girano su se stessi</em> ✦, quella piroetta &egrave; <strong>un movimento della sequenza</strong> come tutti gli altri: contala!</p>
             </div>
             <div class="instruction-item">
                 <span class="icon">3</span>
@@ -127,6 +127,8 @@
          ============================================ -->
     <div id="demo-overlay">
         <h2>SEQUENZA DA SEGUIRE</h2>
+        <!-- V12: promemoria sempre visibile (anche durante il countdown) -->
+        <div id="demo-hint">✦ Anche la <strong>piroetta sul posto</strong> (quando restano fermi e girano su se stessi) &egrave; <strong>un movimento della sequenza</strong>: contala!</div>
         <div id="demo-level-info">Livello 1 - Durata: 10s</div>
         <div id="demo-timer">10</div>
         <div id="demo-stage" class="tile demo-tile"></div>
@@ -165,6 +167,8 @@
         <div id="comparison-message"></div>
         <button id="btn-comparison-retry">Coraggio, riproviamo!</button>
         <button id="btn-comparison-replay">Rivedi la differenza</button>
+        <!-- V12: avviso in basso al momento esatto della divergenza -->
+        <div id="divergence-notice"></div>
     </div>
 
     <!-- Resultat -->
