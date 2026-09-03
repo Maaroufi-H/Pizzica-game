@@ -4,128 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0a0a0a">
-    <title>Pizzica Master — Versioni</title>
+    <meta http-equiv="refresh" content="0; url=/v12/">
+    <title>Pizzica Master</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            min-height: 100vh;
-            background: radial-gradient(circle at 30% 20%, #1a1a3e 0%, #0a0a0a 60%);
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px 16px;
-            gap: 22px;
-        }
-        .dancers { font-size: 2.6rem; letter-spacing: 8px; }
-        h1 {
-            color: #ff0055;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            font-size: 1.7rem;
-            text-shadow: 0 0 15px #ff0055;
-            text-align: center;
-        }
-        .subtitle { color: #00ffcc; font-size: 0.95rem; text-align: center; }
-        .cards { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 430px; }
-        a.card {
-            display: block;
-            text-decoration: none;
-            color: #fff;
-            background: rgba(22, 22, 58, 0.75);
-            border: 2px solid #5555ff;
-            border-radius: 14px;
-            padding: 16px 18px;
-            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
-        }
-        a.card:hover, a.card:active {
-            transform: scale(1.02);
-            border-color: #00ffcc;
-            box-shadow: 0 0 22px rgba(0, 255, 204, 0.45);
-        }
-        .card .v {
-            color: #ffd700;
-            font-weight: bold;
-            font-size: 1.15rem;
-            text-shadow: 0 0 8px #ffd700;
-            margin-bottom: 4px;
-        }
-        .card .desc { color: #ccc; font-size: 0.85rem; line-height: 1.4; }
-        .card.latest { border-color: #ffd700; }
-        .card.latest .badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #ff0055, #cc0044);
-            border-radius: 20px;
-            font-size: 0.65rem;
-            padding: 2px 10px;
-            margin-left: 8px;
-            vertical-align: middle;
-            text-shadow: none;
-            color: #fff;
-        }
-        footer { color: rgba(255,255,255,0.55); font-size: 0.8rem; font-style: italic; text-align: center; }
+        body { margin: 0; min-height: 100vh; background: #0a0a0a; color: #ffd700;
+               display: flex; align-items: center; justify-content: center;
+               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        a { color: #00ffcc; }
     </style>
 </head>
 <body>
-    <div class="dancers">🕺💃</div>
-    <h1>Pizzica Master</h1>
-    <div class="subtitle">Scegli la versione da provare</div>
-
-    <div class="cards">
-        <a class="card" href="/v1/">
-            <div class="v">V1 — Originale</div>
-            <div class="desc">La prima versione (11/2025): cornici piccole, guida cercle.jpg, pausa al centro.</div>
-        </a>
-        <a class="card" href="/v2/">
-            <div class="v">V2 — Cornici grandi + video</div>
-            <div class="desc">Cornici ingrandite (griglia &gt;80% su Android), danzatori proporzionali, video di pizzica sullo sfondo, PWA Play Store.</div>
-        </a>
-        <a class="card" href="/v3/">
-            <div class="v">V3 — Piedi sul cerchio &amp; incroci ✦</div>
-            <div class="desc">Scarpe sempre a contatto con cerchio e linee, guida disegnata dal gioco, mai fermi all'incrocio: pirouette alternate o rotazione a due con stelle scintillanti.</div>
-        </a>
-        <a class="card" href="/v4/">
-            <div class="v">V4 — Scegli i ballerini</div>
-            <div class="desc">2 ballerini e 2 ballerine selezionabili, ognuno con la sua danza (gambe vive!). Mai piu fermi: le pause diventano piroette magiche ✦. Stessa altezza per lui e lei, scarpe rosse per il ballerino.</div>
-        </a>
-        <a class="card" href="/v5/">
-            <div class="v">V5 — Livelli a scalini &amp; incroci puliti</div>
-            <div class="desc">Principiante (2 coppie), Intermedio (3), Avanzato (4) — 3 sotto-livelli ciascuno con durata 10/15/20s. Piroetta magica: UN solo giro, lento e contabile. Dopo l'incrocio mai dritto: ritorno indietro o uscita perpendicolare.</div>
-        </a>
-        <a class="card" href="/v6/">
-            <div class="v">V6 — Sempre in rotazione sul cerchio</div>
-            <div class="desc">In modo circolare i ballerini girano SEMPRE su se stessi — quarti di giro, mezzi giri e rotazione d'incrocio compresi — con un giro completo e contabile per ogni movimento. Nessuna rotazione solo sulle linee trasversali, quando si avvicinano o si allontanano.</div>
-        </a>
-        <a class="card" href="/v7/">
-            <div class="v">V7 — Flussi puliti &amp; ballerina animata</div>
-            <div class="desc">Il countdown parte gi&agrave; sulla scena con i ballerini in posizione. Dopo l'incrocio nessuno prosegue dritto: si riparte sempre in un senso diverso da quello d'arrivo. Nell'analisi dell'errore un avviso in basso segna il momento esatto in cui le sequenze si separano, con 2 secondi di pausa, poi la corretta e infine la tua. Nuova ballerina 💃 animata (Lottie).</div>
-        </a>
-        <a class="card" href="/v8/">
-            <div class="v">V8 — Incrocio col ritorno &amp; cerchio grande</div>
-            <div class="desc">Dopo l'incrocio al centro il <strong>ritorno indietro &egrave; obbligatorio</strong>: nessuno prosegue oltre, la manovra "si incrociano e riprendono il cammino" &egrave; stata eliminata. Cerchio e cornici pi&ugrave; grandi del 25%, e il cerchio-guida ora &egrave; appena visibile.</div>
-        </a>
-        <a class="card" href="/v9/">
-            <div class="v">V9 — La coppia definitiva</div>
-            <div class="desc">Due soli ballerini, senza pi&ugrave; nessuna scelta: lui &egrave; una nuova illustrazione piatta (camicia bianca, jeans blu) animata a 36 immagini coi piedi sempre a terra, lei l'emoji 💃 animata. Stessa altezza per entrambi.</div>
-        </a>
-        <a class="card" href="/v10/">
-            <div class="v">V10 — Roma antica</div>
-            <div class="desc">Ambientazione completamente nuova: pavimento di <strong>marmo romano in prospettiva</strong> con colonne e luce di torce, palette oro e rosso pompeiano. Nuovo <strong>ballerino in costume di pizzica</strong> (camicia bianca a maniche a sbuffo, gilet, fascia rossa) che balla al ritmo della ballerina. E quando i danzatori girano intorno al cerchio lasciano una <strong>scia di stelline dorate</strong>.</div>
-        </a>
-        <a class="card latest" href="/v11/">
-            <div class="v">V11 — Fluidit&agrave;<span class="badge">ULTIMA</span></div>
-            <div class="desc">Ritorno al tema scuro (la V10 era troppo marrone): l'antico vive solo <strong>dentro il riquadro</strong> — marmo antracite in prospettiva, quasi nero, con <strong>quattro piccoli flambeaux</strong> negli angoli. Ballerino di pizzica dai movimenti <strong>armonici</strong> (gomiti articolati, nessuno scatto). Riquadri e cerchi ancora pi&ugrave; grandi. Mezzo cerchio un po' pi&ugrave; lento e, al cambio di senso, un <strong>pivot fluido di transizione</strong> senza stelle (non &egrave; uno stato).</div>
-        </a>
-    </div>
-
-    <footer>Creato all'improvviso da Hatem Maaroufi — 11/2025</footer>
+    <p>Pizzica Master&hellip; <a href="/v12/">entra</a></p>
     <script>
-        // purge l'ancien service worker racine (quand le jeu etait servi sur /)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(function () {});
-        }
+        // la racine ouvre directement la version courante (les /vN/ restent accessibles par URL)
+        location.replace('/v12/');
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(function () {}); }
     </script>
 </body>
 </html>

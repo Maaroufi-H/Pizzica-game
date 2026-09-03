@@ -135,6 +135,28 @@ function allowedNextStates(sequence, currentState) {
     return VALID_TRANSITIONS[currentState];
 }
 
+// V17: duree reelle d'une sequence telle que la jouera Couple.transitionTo
+// (memes regles: C apres D/F = pause, pivot de transition a chaque inversion
+// A<->B). Sert a la minuterie de la demo pour qu'elle tombe a zero
+// EXACTEMENT quand les danseurs s'arretent.
+function sequenceDurationMs(sequence) {
+    let total = 0;
+    let prev = STATE.C;
+    for (const st of sequence) {
+        let d = CONFIG.MOVE_DURATION;
+        if (st === STATE.C) d = CONFIG.PAUSE_DURATION;   // piroette lente sur toute la duree de la pause
+        else if (st === STATE.D) d = CONFIG.PAUSE_DURATION;
+        else if (st === STATE.G) d = CONFIG.CROSS_SPIN_DURATION * 2;
+        else if (st === STATE.A || st === STATE.B) {
+            d = CONFIG.CIRCLE_DURATION;
+            if ((prev === STATE.A || prev === STATE.B) && prev !== st) d += CONFIG.TURN_TRANSITION;
+        }
+        total += d;
+        prev = st;
+    }
+    return total;
+}
+
 // ============================================
 // GENERATEUR DE SEQUENCES
 // ============================================
@@ -708,25 +730,22 @@ class PizzicaGame {
     // ========================================
     // V6 PRO: GESTION TIMER DEMO
     // ========================================
-    startDemoTimer(durationSeconds) {
-        // Arreter tout timer existant
+    startDemoTimer(durationMs) {
+        // V17: minuterie calee sur l'horloge reelle -> zero pile a la fin
         if (this.demoTimerInterval) {
             clearInterval(this.demoTimerInterval);
         }
-
-        let remaining = durationSeconds;
-        this.demoTimer.textContent = remaining;
-
-        this.demoTimerInterval = setInterval(() => {
-            remaining--;
-            if (remaining >= 0) {
-                this.demoTimer.textContent = remaining;
-            }
-            if (remaining <= 0) {
+        const end = performance.now() + durationMs;
+        const tick = () => {
+            const left = Math.max(0, Math.ceil((end - performance.now()) / 1000));
+            this.demoTimer.textContent = left;
+            if (left <= 0) {
                 clearInterval(this.demoTimerInterval);
                 this.demoTimerInterval = null;
             }
-        }, 1000);
+        };
+        tick();
+        this.demoTimerInterval = setInterval(tick, 200);
     }
 
     stopDemoTimer() {
@@ -734,6 +753,8 @@ class PizzicaGame {
             clearInterval(this.demoTimerInterval);
             this.demoTimerInterval = null;
         }
+        // V17: la sequence est finie -> le compte a rebours affiche 0, pile
+        if (this.demoTimer) this.demoTimer.textContent = '0';
     }
 
     // ========================================
@@ -873,7 +894,7 @@ class PizzicaGame {
         // les danseurs dansent sur place en attendant le GO
         this.demoCouple.setAnimationClass('dancing');
         this.progressBar.style.width = '0%';
-        this.demoTimer.textContent = LEVELS[this.currentLevel].duration;
+        this.demoTimer.textContent = Math.ceil(sequenceDurationMs(this.currentSequence) / 1000);
     }
 
     /** V12: countdown 3-2-1 mutualise (toujours par-dessus la scene en place) */
@@ -902,9 +923,10 @@ class PizzicaGame {
         this.demoCouple.stopAnimations();
         this.progressBar.style.width = '0%';
 
-        // V6 PRO: Demarrer le timer visible
-        const levelDuration = LEVELS[this.currentLevel].duration;
-        this.startDemoTimer(levelDuration);
+        // V17: minuterie = duree reelle de la sequence
+        const realMs = sequenceDurationMs(this.currentSequence);
+        this.demoLevelInfo.textContent = `Livello ${this.currentLevel} - Durata: ${Math.ceil(realMs / 1000)}s - ${tilesForLevel(this.currentLevel)} coppie`;
+        this.startDemoTimer(realMs);
 
         this.runSequence(this.demoCouple, this.currentSequence, 0, () => {
             this.stopDemoTimer();
@@ -921,7 +943,7 @@ class PizzicaGame {
         // V12: remettre les danseurs en position de depart AVANT le countdown
         this.demoCouple.reset();
         this.progressBar.style.width = '0%';
-        this.demoTimer.textContent = LEVELS[this.currentLevel].duration;
+        this.demoTimer.textContent = Math.ceil(sequenceDurationMs(this.currentSequence) / 1000);
 
         this.runCountdown(() => this.replayDemoSequence());
     }
@@ -934,9 +956,8 @@ class PizzicaGame {
             this.currentAudio.currentTime = 0;
         }
 
-        // V6 PRO: Redemarrer le timer
-        const levelDuration = LEVELS[this.currentLevel].duration;
-        this.startDemoTimer(levelDuration);
+        // V17: minuterie = duree reelle de la sequence
+        this.startDemoTimer(sequenceDurationMs(this.currentSequence));
 
         this.runSequence(this.demoCouple, this.currentSequence, 0, () => {
             this.stopDemoTimer();
@@ -980,9 +1001,8 @@ class PizzicaGame {
         this.demoCouple.stopAnimations();
         this.progressBar.style.width = '0%';
 
-        // V6 PRO: Redemarrer le timer
-        const levelDuration = LEVELS[this.currentLevel].duration;
-        this.startDemoTimer(levelDuration);
+        // V17: minuterie = duree reelle de la sequence
+        this.startDemoTimer(sequenceDurationMs(this.currentSequence));
 
         this.runSequence(this.demoCouple, this.currentSequence, 0, () => {
             this.stopDemoTimer();
