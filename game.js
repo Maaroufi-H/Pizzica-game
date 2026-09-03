@@ -26,8 +26,7 @@ const CONFIG = {
     // Pirouette alternee (un danseur a la fois) et rotation croisee a deux,
     // legerement ralenties pour laisser le temps au joueur de les lire.
     CROSS_SPIN_DURATION: 1400,
-    CROSS_ROTATE_DURATION: 3000,
-    MAX_CROSS_MOVES: 2,
+    // V13: un seul croisement, suivi obligatoirement du retour en arriere
     // V12: pause au moment de la divergence (analyse d'erreur)
     DIVERGENCE_PAUSE: 2000,
     // V10: le nombre de carreaux depend du livello (2/3/4) — voir LEVELS
@@ -102,40 +101,32 @@ const STATE = {
     E: 'TRANSLATE_FORWARD',
     F: 'TRANSLATE_BACKWARD',
     // V8: mouvements de CROISEMENT au centre (remplacent la pause D)
-    G: 'CROSS_SPIN_ALTERNATE',   // pirouettes alternees: l'un tourne, l'autre attend, puis echange
-    H: 'CROSS_ROTATE_BOTH',      // rotation croisee a deux autour du petit cercle, ralentie
-    // V10: REGLE DU CROISEMENT - apres un croisement au centre, INTERDIT de
-    // continuer sur la meme trajectoire. Les danseurs soit reculent (F),
-    // soit sortent sur la ligne PERPENDICULAIRE, chacun dans un sens oppose
-    // (ils sont diametralement opposes sur la roue, donc P/Q les envoient
-    // automatiquement dans des sens opposes).
-    P: 'EXIT_PERPENDICULAR_CW',  // sortie perpendiculaire, quart de tour horaire
-    Q: 'EXIT_PERPENDICULAR_CCW'  // sortie perpendiculaire, quart de tour anti-horaire
+    // V13: UN SEUL croisement possible - pirouettes alternees sur place, sans
+    // echange de positions. La manoeuvre "on se croise, on tourne et on
+    // repart de l'autre cote" (ancien etat H) est SUPPRIMEE, ainsi que les
+    // sorties perpendiculaires P/Q: apres un croisement le retour en arriere
+    // est OBLIGATOIRE (chacun repart d'ou il est venu).
+    G: 'CROSS_SPIN_ALTERNATE'
 };
 
-// V8: etats de croisement (au centre, avec etoiles scintillantes)
+// V8: etat de croisement (au centre, avec etoiles scintillantes)
 function isCrossState(s) {
-    return s === STATE.G || s === STATE.H;
+    return s === STATE.G;
 }
 
 // ============================================
 // TRANSITIONS VALIDES
-// V8: E mene toujours a un croisement (G/H), jamais a une pause figee.
-// Apres 1 ou 2 croisements max (MAX_CROSS_MOVES), separation obligatoire (F)
-// dans les sens opposes. F est en premiere position: c'est la sortie de secours
-// des boucles de fermeture de sequence.
+// V8: E mene toujours au croisement, jamais a une pause figee.
 // ============================================
-// V10: sorties de croisement = F (retour en arriere) OU P/Q (ligne
-// perpendiculaire, sens opposes). Jamais tout droit sur la meme trajectoire.
+// V13: apres le croisement au centre (G), l'etat suivant est NECESSAIREMENT
+// le retour en arriere (F): chaque danseur repart dans le sens oppose a celui
+// de son arrivee, jamais tout droit et jamais en perpendiculaire.
 const VALID_TRANSITIONS = {
     [STATE.C]: [STATE.E, STATE.A, STATE.B],
-    [STATE.E]: [STATE.G, STATE.H],
-    [STATE.G]: [STATE.F, STATE.P, STATE.Q, STATE.G, STATE.H],
-    [STATE.H]: [STATE.F, STATE.P, STATE.Q, STATE.G, STATE.H],
+    [STATE.E]: [STATE.G],
+    [STATE.G]: [STATE.F],
     [STATE.D]: [STATE.F],
     [STATE.F]: [STATE.C],
-    [STATE.P]: [STATE.C],
-    [STATE.Q]: [STATE.C],
     [STATE.A]: [STATE.B, STATE.C],
     [STATE.B]: [STATE.A, STATE.C]
 };
@@ -147,45 +138,14 @@ const STATE_DURATION = {
     [STATE.F]: CONFIG.MOVE_DURATION,
     [STATE.A]: CONFIG.MOVE_DURATION,
     [STATE.B]: CONFIG.MOVE_DURATION,
-    [STATE.G]: CONFIG.CROSS_SPIN_DURATION * 2,
-    [STATE.H]: CONFIG.CROSS_ROTATE_DURATION,
-    [STATE.P]: CONFIG.MOVE_DURATION,
-    [STATE.Q]: CONFIG.MOVE_DURATION
+    [STATE.G]: CONFIG.CROSS_SPIN_DURATION * 2
 };
 
-// V12: angle cumule par la roue pendant le bloc de croisement en cours.
-// G (pirouettes alternees) ne fait pas tourner la roue, H (rotation a deux)
-// l'avance de 180 deg et ECHANGE donc les positions des deux danseurs.
-function crossAngleDelta(sequence) {
-    let delta = 0;
-    for (let i = sequence.length - 1; i >= 0 && isCrossState(sequence[i]); i--) {
-        if (sequence[i] === STATE.H) delta += 180;
-    }
-    return ((delta % 360) + 360) % 360;
-}
-
-// V8: filtre les transitions pour ne jamais depasser MAX_CROSS_MOVES
-// croisements consecutifs (la sequence doit alors se separer via F)
-// V12: apres un croisement, chaque danseur doit repartir dans un sens
-// DIFFERENT de celui de son arrivee. Il arrive vers le centre a l'angle T;
-// il repart vers l'exterieur a l'angle T+delta. Repartir "tout droit"
-// (meme sens que l'arrivee) correspond exactement a delta = 180, c'est a
-// dire un nombre IMPAIR de rotations H: dans ce cas la sortie radiale F est
-// interdite et il faut sortir par la perpendiculaire (P/Q).
+// V13: la matrice suffit desormais (E -> G -> F force le retour en arriere,
+// et un seul croisement d'affilee est possible). La fonction reste le point
+// d'entree unique du generateur pour pouvoir y ajouter des regles.
 function allowedNextStates(sequence, currentState) {
-    let valid = VALID_TRANSITIONS[currentState];
-    if (!isCrossState(currentState)) return valid;
-    let consecutive = 0;
-    for (let i = sequence.length - 1; i >= 0 && isCrossState(sequence[i]); i--) {
-        consecutive++;
-    }
-    if (consecutive >= CONFIG.MAX_CROSS_MOVES) {
-        valid = valid.filter(s => !isCrossState(s));
-    }
-    if (crossAngleDelta(sequence) === 180) {
-        valid = valid.filter(s => s !== STATE.F);
-    }
-    return valid;
+    return VALID_TRANSITIONS[currentState];
 }
 
 // ============================================
@@ -256,10 +216,26 @@ class Couple {
     }
 
     computeGeometry() {
-        const tileSize = Math.min(this.container.clientWidth, this.container.clientHeight) || 200;
-        this.radiusFar = tileSize * 0.26;
-        this.radiusClose = tileSize * 0.115;
+        const w = this.container.clientWidth || 200;
+        const h = this.container.clientHeight || 200;
+        const tileSize = Math.min(w, h) || 200;
         this.dancerSize = Math.round(tileSize * 0.22);
+
+        // V13: cercle AGRANDI DE 25% (0.26 -> 0.325 du carreau) quand la
+        // geometrie le permet. Les pieds sont sur le cercle et le corps monte
+        // de dancerSize au-dessus: on borne donc le rayon pour que le danseur
+        // reste entierement dans le cadre, en haut comme sur les cotes.
+        const d = this.dancerSize;
+        const margin = 3;
+        const maxByHeight = h / 2 - d - margin;      // danseur en haut du cercle
+        const maxByWidth = w / 2 - d / 2 - margin;   // danseur sur les cotes
+        this.radiusFar = Math.max(
+            tileSize * 0.12,
+            Math.min(tileSize * 0.325, maxByHeight, maxByWidth)
+        );
+        // le petit cercle du croisement garde la meme proportion qu'avant
+        this.radiusClose = this.radiusFar * 0.442;
+
         this.container.style.setProperty('--dancer-size', this.dancerSize + 'px');
         this.updateGuide();
     }
@@ -310,7 +286,7 @@ class Couple {
     remeasure() {
         if (!this.wheel || !this.wheel.isConnected) return;
         this.computeGeometry();
-        const closeStates = [STATE.D, STATE.E, STATE.G, STATE.H];
+        const closeStates = [STATE.D, STATE.E, STATE.G];
         this.radius = closeStates.includes(this.currentState)
             ? this.radiusClose : this.radiusFar;
         this.applyPosition(true);
@@ -439,45 +415,9 @@ class Couple {
                 break;
             }
 
-            // V8: CROISEMENT - rotation a deux autour du petit cercle,
-            // ralentie, avec etoiles sur les deux danseurs.
-            case STATE.H:
-                this.radius = this.radiusClose;
-                this.wheelAngle += 180;
-                duration = CONFIG.CROSS_ROTATE_DURATION;
-                this.setSpinDuration(CONFIG.CROSS_ROTATE_DURATION);
-                this.setAnimationClass('cross-rotating');
-                this.startStars(this.manWrapper, duration);
-                this.startStars(this.womanWrapper, duration);
-                break;
-
-            // V10: SORTIE PERPENDICULAIRE apres un croisement — la roue fait
-            // un quart de tour pendant que le rayon repasse au grand cercle:
-            // chaque danseur quitte le centre sur la ligne perpendiculaire a
-            // celle d'entree, dans des sens opposes (jamais tout droit).
-            // V10.1: P/Q sont des mouvements CIRCULAIRES (quart de tour sur
-            // le cercle) - en mode circulaire les danseurs tournent TOUJOURS
-            // sur eux-memes ('rotating', comme A/B). Seules les translations
-            // pures sur les lignes transversales (E/F) ne pirouettent pas.
-            case STATE.P:
-                this.radius = this.radiusFar;
-                this.wheelAngle += 90;
-                this.setSpinDuration(CONFIG.MOVE_DURATION);
-                this.setAnimationClass('rotating');
-                break;
-
-            case STATE.Q:
-                this.radius = this.radiusFar;
-                this.wheelAngle -= 90;
-                this.setSpinDuration(CONFIG.MOVE_DURATION);
-                this.setAnimationClass('rotating');
-                break;
         }
 
-        // V8: la rotation de croisement (H) est plus lente que la normale
-        const moveDuration = (newState === STATE.H)
-            ? CONFIG.CROSS_ROTATE_DURATION : CONFIG.MOVE_DURATION;
-        this.applyPosition(false, moveDuration);
+        this.applyPosition(false, CONFIG.MOVE_DURATION);
         return duration;
     }
 
@@ -521,8 +461,7 @@ class Couple {
         // V8: stopper aussi les phases de croisement et l'emission d'etoiles
         this.clearInternalTimers();
         const classes = ['dancing', 'rotating', 'translating', 'close', 'flip',
-            'static-state', 'cross-spinning', 'cross-rotating',
-            'magic-spinning', 'dance-step'];
+            'static-state', 'cross-spinning', 'magic-spinning', 'dance-step'];
         classes.forEach(cls => {
             this.manWrapper.classList.remove(cls);
             this.womanWrapper.classList.remove(cls);
@@ -1870,9 +1809,7 @@ class PizzicaGame {
             [STATE.E]: 'Traslazione avanti',
             [STATE.F]: 'Traslazione indietro',
             [STATE.G]: 'Incrocio: giri alternati ✦',
-            [STATE.H]: 'Incrocio: rotazione insieme ✦',
-            [STATE.P]: 'Uscita perpendicolare (oraria) ⤵',
-            [STATE.Q]: 'Uscita perpendicolare (antioraria) ⤴'
+            [STATE.G]: 'Incrocio: giri alternati ✦'
         };
         return names[state] || 'Sconosciuto';
     }

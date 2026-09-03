@@ -350,8 +350,8 @@ button.char-thumb:hover {
 
 /* Demo preview sur l'accueil - V7: agrandi pour englober completement les danseurs */
 #demo-preview {
-    width: 260px;
-    height: 260px;
+    width: 325px;
+    height: 325px;
     margin: 15px 0;
 }
 
@@ -464,8 +464,9 @@ button:disabled {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    width: min(85vw, 560px);
-    height: min(78vh, 560px);
+    /* V13: +25% */
+    width: min(92vw, 700px);
+    height: min(86vh, 700px);
     gap: 6px;
     padding: 8px;
     /* V8: semi-transparent, la video d'ambiance transparait */
@@ -479,14 +480,14 @@ button:disabled {
 #dance-floor.tiles-2 {
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: 1fr;
-    height: min(48vh, 340px);
+    height: min(60vh, 425px);
 }
 
 #dance-floor.tiles-3 {
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: 1fr;
-    width: min(92vw, 800px);
-    height: min(42vh, 300px);
+    width: min(96vw, 1000px);
+    height: min(52vh, 375px);
 }
 
 @media (orientation: portrait) {
@@ -494,14 +495,14 @@ button:disabled {
     #dance-floor.tiles-2 {
         grid-template-columns: 1fr;
         grid-template-rows: repeat(2, 1fr);
-        width: min(60vw, 400px);
-        height: min(78vh, 720px);
+        width: min(75vw, 500px);
+        height: min(84vh, 760px);
     }
     #dance-floor.tiles-3 {
         grid-template-columns: 1fr;
         grid-template-rows: repeat(3, 1fr);
-        width: min(46vw, 320px);
-        height: min(82vh, 900px);
+        width: min(58vw, 400px);
+        height: min(86vh, 940px);
     }
 }
 
@@ -532,12 +533,13 @@ button:disabled {
 .guide-svg circle,
 .guide-svg line {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.35);
-    stroke-width: 1.5;
+    /* V13: guide a peine visible */
+    stroke: rgba(255, 255, 255, 0.10);
+    stroke-width: 1.4;
 }
 
 .guide-svg .g-inner {
-    stroke: rgba(255, 255, 255, 0.18);
+    stroke: rgba(255, 255, 255, 0.05);
     stroke-dasharray: 4 5;
 }
 
@@ -941,14 +943,16 @@ button:disabled {
 
 /* V7: carreau principal de la demo agrandi de 25% (200 -> 250) */
 #demo-overlay .tile {
-    width: 250px;
-    height: 250px;
+    /* V13: jamais ecrase par le flex - le carreau reste carre */
+    flex: 0 0 auto;
+    width: 312px;
+    height: 312px;
     margin: 12px;
     cursor: default;
 }
 
 #demo-progress {
-    width: 250px;
+    width: 312px;
     height: 6px;
     background: #333;
     border-radius: 3px;
@@ -1305,8 +1309,8 @@ button:disabled {
         height: min(86vh, calc(100dvh - 110px));
     }
 
-    #demo-overlay .tile { width: min(250px, 66vw); height: min(250px, 66vw); }
-    #demo-progress { width: min(250px, 66vw); }
+    #demo-overlay .tile { width: min(312px, 82vw); height: min(312px, 82vw); }
+    #demo-progress { width: min(312px, 82vw); }
 
     #countdown { font-size: 6rem; }
     #go-message { font-size: 7rem; }
@@ -1355,8 +1359,8 @@ button:disabled {
     }
 
     /* V7: +25% par rapport aux 160px d'origine */
-    #demo-overlay .tile { width: min(200px, 62vw); height: min(200px, 62vw); }
-    #demo-progress { width: min(200px, 62vw); }
+    #demo-overlay .tile { width: min(250px, 80vw); height: min(250px, 80vw); }
+    #demo-progress { width: min(250px, 80vw); }
 }
 
 /* V9: telephones courts en portrait - tout doit tenir au-dessus du pli */
@@ -1397,8 +1401,13 @@ button:disabled {
         height: 84vh;
     }
 
-    #demo-overlay .tile { width: min(250px, 52vh); height: min(250px, 52vh); }
-    #demo-progress { width: min(250px, 52vh); }
+    #demo-overlay h2 { font-size: 1rem; margin-bottom: 4px; }
+    #demo-hint { font-size: 0.6rem; padding: 4px 8px; margin-bottom: 4px; max-width: min(72vw, 430px); }
+    #demo-level-info { font-size: 0.78rem; margin-bottom: 4px; }
+    #demo-timer { font-size: 1.8rem; margin-bottom: 4px; }
+    #btn-replay { margin-top: 6px; padding: 7px 18px; font-size: 0.8rem; }
+    #demo-overlay .tile { width: min(312px, 46vh); height: min(312px, 46vh); }
+    #demo-progress { width: min(312px, 46vh); margin-top: 6px; }
 
     #countdown { font-size: 5rem; }
     #go-message { font-size: 6rem; }
