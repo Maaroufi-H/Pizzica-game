@@ -12,12 +12,13 @@
     --dancer-size: 40px;
     --move-duration: 2250ms;
 
-    --neon-pink: #ff0055;
-    --neon-cyan: #00ffcc;
-    --neon-blue: #0088ff;
-    --neon-gold: #ffd700;
-    --neon-purple: #aa00ff;
-    --dark-bg: #0a0a0a;
+    /* V15: palette ROME ANTIQUE - rouge pompeien, or, marbre, bronze */
+    --neon-pink: #c0392b;
+    --neon-cyan: #e6d6ae;
+    --neon-blue: #8c6b3f;
+    --neon-gold: #d4af37;
+    --neon-purple: #7a4b28;
+    --dark-bg: #17100a;
 }
 
 * {
@@ -33,7 +34,7 @@ html, body {
 }
 
 body {
-    background: url('pizz2.jpg') no-repeat center center fixed;
+    background: url('bg-rome.jpg') no-repeat center center fixed;
     background-size: cover;
     color: white;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
@@ -57,7 +58,11 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.65;
+    /* V15: la video de pizzica ne joue plus la scene, elle donne des reflets
+       et des ombres mouvantes sur le marbre */
+    opacity: 0.13;
+    mix-blend-mode: soft-light;
+    filter: saturate(0.35) blur(1px);
 }
 
 /* V8: voile allege pour que la video d'ambiance reste legerement visible */
@@ -65,8 +70,18 @@ body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    /* voile chaud (pierre dans la penombre) + lueur de flambeaux qui respire */
+    background:
+        radial-gradient(ellipse at 12% 28%, rgba(255, 176, 84, 0.16) 0%, transparent 45%),
+        radial-gradient(ellipse at 88% 26%, rgba(255, 176, 84, 0.14) 0%, transparent 45%),
+        rgba(26, 16, 8, 0.46);
     z-index: 1;
+    animation: torchGlow 6s ease-in-out infinite;
+}
+
+@keyframes torchGlow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.9; }
 }
 
 /* ============================================
@@ -106,16 +121,16 @@ body::before {
 }
 
 .beam-pink {
-    background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,0,85,0.2) 40%, transparent 100%);
+    background: linear-gradient(180deg, rgba(255,236,190,0.30) 0%, rgba(192,57,43,0.16) 40%, transparent 100%);
 }
 .beam-cyan {
-    background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(0,255,204,0.2) 40%, transparent 100%);
+    background: linear-gradient(180deg, rgba(255,236,190,0.30) 0%, rgba(230,214,174,0.16) 40%, transparent 100%);
 }
 .beam-purple {
-    background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(170,0,255,0.2) 40%, transparent 100%);
+    background: linear-gradient(180deg, rgba(255,236,190,0.30) 0%, rgba(122,75,40,0.18) 40%, transparent 100%);
 }
 .beam-gold {
-    background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,215,0,0.2) 40%, transparent 100%);
+    background: linear-gradient(180deg, rgba(255,236,190,0.32) 0%, rgba(212,175,55,0.20) 40%, transparent 100%);
 }
 
 .spotlight.active .spotlight-beam {
@@ -136,7 +151,7 @@ body::before {
 }
 
 .spotlight.active {
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.9), 0 0 30px var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(255, 236, 190, 0.9), 0 0 30px var(--neon-gold);
 }
 
 /* ============================================
@@ -157,8 +172,8 @@ body::before {
 #instructions-panel {
     position: relative;
     width: 200px;
-    background: rgba(0, 0, 0, 0.75);
-    border: 2px solid var(--neon-cyan);
+    background: rgba(24, 15, 8, 0.82);
+    border: 2px solid rgba(212, 175, 55, 0.55);
     border-radius: 15px;
     padding: 15px;
     z-index: 20;
@@ -211,7 +226,7 @@ body::before {
 .instruction-item p em { color: var(--neon-cyan); }
 
 .instruction-item.warning {
-    background: rgba(255, 0, 85, 0.15);
+    background: rgba(192, 57, 43, 0.16);
     padding: 6px;
     border-radius: 8px;
     margin: 8px 0;
@@ -414,10 +429,10 @@ button:disabled {
     height: min(86vh, 700px);
     gap: 6px;
     padding: 8px;
-    /* V8: semi-transparent, la video d'ambiance transparait */
-    background: rgba(17, 17, 17, 0.30);
+    /* V15: dallage de pierre, la scene romaine transparait */
+    background: rgba(24, 15, 8, 0.34);
     border-radius: 12px;
-    box-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.22), inset 0 0 40px rgba(0, 0, 0, 0.35);
 }
 
 /* V10: grille selon le nombre de carreaux du livello.
@@ -456,13 +471,19 @@ button:disabled {
    EXACTEMENT egal a l'orbite des pieds des danseurs. */
 .tile {
     position: relative;
-    background: rgba(22, 22, 58, 0.45);
-    border: 2px solid #5555ff;
+    /* V15: marbre romain + perspective 3D, assombri pour que les danseurs
+       et le guide restent parfaitement lisibles */
+    background-image:
+        linear-gradient(rgba(30, 20, 11, 0.50), rgba(20, 13, 7, 0.64)),
+        url('tile-rome.jpg');
+    background-size: cover, cover;
+    background-position: center bottom;
+    border: 2px solid rgba(212, 175, 55, 0.55);
     border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
     transition: border-color 0.3s, box-shadow 0.3s;
-    box-shadow: inset 0 0 20px rgba(100, 100, 255, 0.10);
+    box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.55), 0 0 12px rgba(212, 175, 55, 0.10);
 }
 
 /* V8: guide genere par Couple.updateGuide() */
@@ -478,13 +499,13 @@ button:disabled {
 .guide-svg circle,
 .guide-svg line {
     fill: none;
-    /* V13: guide a peine visible */
-    stroke: rgba(255, 255, 255, 0.10);
+    /* V13: guide a peine visible (V15: teinte chaude sur le marbre) */
+    stroke: rgba(255, 236, 190, 0.13);
     stroke-width: 1.4;
 }
 
 .guide-svg .g-inner {
-    stroke: rgba(255, 255, 255, 0.05);
+    stroke: rgba(255, 236, 190, 0.06);
     stroke-dasharray: 4 5;
 }
 
@@ -509,7 +530,7 @@ button:disabled {
 
 @keyframes discoTile {
     0%, 100% { box-shadow: inset 0 0 20px rgba(255,0,85,0.2); border-color: #444; }
-    33% { box-shadow: inset 0 0 25px rgba(0,136,255,0.3); border-color: var(--neon-blue); }
+    33% { box-shadow: inset 0 0 25px rgba(140, 107, 63, 0.35); border-color: var(--neon-blue); }
     66% { box-shadow: inset 0 0 25px rgba(0,255,204,0.3); border-color: var(--neon-cyan); }
 }
 
@@ -620,11 +641,11 @@ button:disabled {
     }
     25% {
         transform: rotateY(90deg) scale(0.8);
-        filter: brightness(1.5) drop-shadow(0 8px 8px rgba(255, 0, 85, 0.6));
+        filter: brightness(1.5) drop-shadow(0 8px 8px rgba(192, 57, 43, 0.55));
     }
     50% {
         transform: rotateY(180deg) scale(1);
-        filter: brightness(1) drop-shadow(0 5px 5px rgba(0, 255, 204, 0.5));
+        filter: brightness(1) drop-shadow(0 5px 5px rgba(230, 214, 174, 0.45));
     }
     75% {
         transform: rotateY(270deg) scale(0.8);
@@ -632,7 +653,7 @@ button:disabled {
     }
     100% {
         transform: rotateY(360deg) scale(1);
-        filter: brightness(1) drop-shadow(0 5px 5px rgba(255, 0, 85, 0.5));
+        filter: brightness(1) drop-shadow(0 5px 5px rgba(192, 57, 43, 0.45));
     }
 }
 
@@ -670,7 +691,7 @@ button:disabled {
     position: absolute;
     inset: -5px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 0, 85, 0.2) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.18) 0%, transparent 70%);
     animation: glowPulse 1s ease-in-out infinite;
     pointer-events: none;
 }
@@ -686,11 +707,11 @@ button:disabled {
 }
 
 .dancer-wrapper.rotating .dancer {
-    filter: drop-shadow(0 5px 5px rgba(255, 0, 85, 0.3));
+    filter: drop-shadow(0 5px 5px rgba(212, 175, 55, 0.28));
 }
 
 .dancer-wrapper.translating .dancer {
-    filter: drop-shadow(0 4px 4px rgba(0, 255, 204, 0.3));
+    filter: drop-shadow(0 4px 4px rgba(230, 214, 174, 0.28));
 }
 
 /* ============================================
@@ -966,7 +987,7 @@ button:disabled {
         0 0 20px #ff0055,
         0 0 40px #ff0055,
         0 0 60px #ff0055,
-        0 0 80px rgba(255, 0, 85, 0.8);
+        0 0 80px rgba(192, 57, 43, 0.75);
     display: none;
     z-index: 120;
     animation: eccoFlash 0.6s ease-out;
@@ -1351,7 +1372,7 @@ button:disabled {
     text-align: center;
     z-index: 130;
     display: none;
-    box-shadow: 0 0 22px rgba(0, 255, 204, 0.35);
+    box-shadow: 0 0 22px rgba(212, 175, 55, 0.35);
     animation: noticeIn 0.35s ease-out;
 }
 
@@ -1395,7 +1416,7 @@ button:disabled {
     margin: 0 auto 8px;
     padding: 7px 12px;
     border-radius: 10px;
-    background: rgba(255, 0, 85, 0.16);
+    background: rgba(192, 57, 43, 0.16);
     border: 1px solid var(--neon-pink);
     color: #ffd9e4;
     font-size: 0.75rem;
@@ -1420,4 +1441,28 @@ button:disabled {
 
 @media (max-width: 768px) {
     #comparison-overlay { padding-bottom: 130px; }
+}
+
+
+/* ============================================
+   V15 - TRAINEE D'ETOILES SUR LE CERCLE
+   Chaque danseur seme de petites etoiles dorees sur son passage
+   pendant qu'il fait le tour du cercle; elles s'estompent derriere lui.
+   ============================================ */
+.trail-star {
+    position: absolute;
+    font-size: 11px;
+    line-height: 1;
+    color: #ffe9a8;
+    text-shadow: 0 0 5px #d4af37, 0 0 11px rgba(255, 214, 130, 0.75);
+    pointer-events: none;
+    z-index: 2;
+    transform: translate(-50%, -50%) scale(var(--tsz, 1));
+    animation: trailFade 850ms ease-out forwards;
+}
+
+@keyframes trailFade {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(calc(var(--tsz, 1) * 0.4)); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(var(--tsz, 1)); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(calc(var(--tsz, 1) * 0.35)); }
 }

@@ -64,7 +64,7 @@ function tilesForLevel(level) {
 // emoji 💃 anime. Meme hauteur, pieds au bord bas de la boite.
 // ============================================
 const CHARACTERS = {
-    man: [{ id: 'm3', img: 'm3.webp', name: 'Ballerino' }],
+    man: [{ id: 'm4', img: 'm4.webp', name: 'Ballerino di pizzica' }],
     woman: [{ id: 'w3', img: 'w3.webp', name: 'Ballerina' }]
 };
 
@@ -367,6 +367,8 @@ class Couple {
                 // V6 PRO: Animation rotation - mouvement expressif
                 this.setSpinDuration(CONFIG.MOVE_DURATION);
                 this.setAnimationClass('rotating');
+                // V15: trainee d'etoiles derriere les danseurs sur le cercle
+                this.startTrail(CONFIG.MOVE_DURATION);
                 break;
 
             case STATE.B:
@@ -374,6 +376,7 @@ class Couple {
                 // V6 PRO: Animation rotation - mouvement expressif
                 this.setSpinDuration(CONFIG.MOVE_DURATION);
                 this.setAnimationClass('rotating');
+                this.startTrail(CONFIG.MOVE_DURATION);
                 break;
 
             // V8: CROISEMENT - pirouettes alternees. L'homme tourne sur lui-meme
@@ -428,6 +431,37 @@ class Couple {
         this.internalTimers.push(stop);
     }
 
+    /**
+     * V15: pendant le tour du cercle, chaque danseur seme de petites etoiles
+     * sur son passage. Les etoiles sont posees DANS le carreau (pas dans le
+     * wrapper) pour rester en place et dessiner la trainee, puis s'estompent.
+     */
+    startTrail(totalMs) {
+        const tile = this.container;
+        const spawn = () => {
+            const tr = tile.getBoundingClientRect();
+            if (!tr.width) return;
+            [this.manWrapper, this.womanWrapper].forEach(w => {
+                const wr = w.getBoundingClientRect();
+                const st = document.createElement('span');
+                st.className = 'trail-star';
+                st.textContent = '✦';
+                st.style.left = (wr.left + wr.width / 2 - tr.left) + 'px';
+                st.style.top = (wr.bottom - tr.top - wr.height * 0.15) + 'px';
+                st.style.setProperty('--tsz', (0.55 + Math.random() * 0.6).toFixed(2));
+                st.style.animationDuration = (760 + Math.random() * 320) + 'ms';
+                tile.appendChild(st);
+                const rm = setTimeout(() => st.remove(), 1150);
+                this.internalTimers.push(rm);
+            });
+        };
+        spawn();
+        const iv = setInterval(spawn, 80);
+        this.internalIntervals.push(iv);
+        const stop = setTimeout(() => clearInterval(iv), Math.max(0, totalMs - 60));
+        this.internalTimers.push(stop);
+    }
+
     clearInternalTimers() {
         this.internalTimers.forEach(t => clearTimeout(t));
         this.internalIntervals.forEach(i => clearInterval(i));
@@ -436,6 +470,10 @@ class Couple {
         [this.manWrapper, this.womanWrapper].forEach(w => {
             if (w) w.querySelectorAll('.cross-star').forEach(s => s.remove());
         });
+        // V15: enlever aussi les etoiles de trainee posees dans le carreau
+        if (this.container) {
+            this.container.querySelectorAll(':scope > .trail-star').forEach(s => s.remove());
+        }
     }
 
     // V6 PRO: Methodes pour gerer les animations dynamiques
