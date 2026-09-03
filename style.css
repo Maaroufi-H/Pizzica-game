@@ -1427,94 +1427,76 @@ button:disabled {
 
 
 /* ============================================
-   V19 - LANTERNES DE CALECHE AUX 4 COINS (verre, laiton, toit, anneau)
+   V20 - FLAMBEAUX DE FEU derriere le public (positionnes par le jeu)
+   Pied de fer, coupe, grande flamme vive, braises et halo.
    ============================================ */
 .torch {
     position: absolute;
-    width: 6.5%;
-    min-width: 15px;
-    aspect-ratio: 1 / 1.35;
+    width: var(--t-size, 16px);
+    height: calc(var(--t-size, 16px) * 1.0);
+    margin-left: calc(var(--t-size, 16px) / -2);
+    margin-top: calc(var(--t-size, 16px) / -2);
     z-index: 1;
     pointer-events: none;
-    /* corps vitre, montants en laiton */
-    border: 2px solid #c9a24a;
-    border-radius: 2px;
+    /* pied + coupe */
     background:
-        linear-gradient(90deg, rgba(201, 162, 74, 0.55) 0 8%, transparent 8% 92%, rgba(201, 162, 74, 0.55) 92%),
-        linear-gradient(180deg, rgba(255, 225, 150, 0.45) 0%, rgba(255, 170, 70, 0.30) 55%, rgba(120, 80, 30, 0.35) 100%);
-    box-shadow:
-        inset 0 0 6px rgba(255, 200, 100, 0.55),
-        0 0 18px 6px rgba(255, 170, 70, 0.30);
-    animation: torchGlow 1.4s ease-in-out infinite;
+        linear-gradient(180deg, transparent 0 55%, #3a2a1a 55% 62%, transparent 62% 100%),
+        radial-gradient(ellipse at 50% 58%, #2b2018 0 34%, transparent 36%);
 }
-/* toit en pointe + anneau */
 .torch::before {
+    /* tige */
     content: '';
     position: absolute;
-    left: -14%;
-    right: -14%;
-    top: -26%;
-    height: 26%;
-    background: linear-gradient(180deg, #e6c064 0%, #9c7530 100%);
-    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    left: 46%;
+    width: 8%;
+    top: 58%;
+    bottom: 0;
+    background: linear-gradient(180deg, #4a3624, #241a10);
 }
 .torch::after {
+    /* halo au sol */
     content: '';
     position: absolute;
-    left: 50%;
-    top: -44%;
-    width: 34%;
-    aspect-ratio: 1;
-    transform: translateX(-50%);
-    border: 2px solid #c9a24a;
+    left: -60%;
+    right: -60%;
+    top: 20%;
+    bottom: -30%;
     border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(255, 160, 60, 0.28) 0%, transparent 70%);
+    animation: torchGlow 1.3s ease-in-out infinite;
 }
-/* bougie + flamme a l'interieur */
 .torch .flame {
     position: absolute;
-    left: 36%;
-    right: 36%;
-    bottom: 22%;
-    aspect-ratio: 1 / 1.7;
+    left: 24%;
+    right: 24%;
+    bottom: 42%;
+    aspect-ratio: 1 / 1.9;
     transform-origin: 50% 100%;
-    border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
-    background: radial-gradient(ellipse at 50% 85%,
-        #fff8d0 0%, #ffd84a 24%, #ff8f22 52%, rgba(220, 70, 10, 0.7) 74%, transparent 100%);
-    animation: flameFlicker 0.55s ease-in-out infinite alternate;
+    border-radius: 50% 50% 45% 45% / 70% 70% 30% 30%;
+    background: radial-gradient(ellipse at 50% 88%,
+        #fffbe0 0%, #ffe066 20%, #ff9a2a 48%, rgba(230, 70, 10, 0.85) 72%, transparent 100%);
+    filter: drop-shadow(0 0 4px rgba(255, 150, 40, 0.8));
+    animation: flameFlicker 0.42s ease-in-out infinite alternate;
 }
-.torch .flame::after {
-    content: '';
-    position: absolute;
-    left: 20%;
-    right: 20%;
-    top: 92%;
-    height: 45%;
-    background: #f3ead6;
-    border-radius: 1px;
-}
-/* socle */
 .torch .flame::before {
+    /* braise / coeur */
     content: '';
     position: absolute;
-    left: -110%;
-    right: -110%;
-    top: 145%;
-    height: 12%;
-    background: #9c7530;
+    left: 30%;
+    right: 30%;
+    bottom: 6%;
+    height: 40%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, #fff6c8 0%, rgba(255, 220, 120, 0) 70%);
 }
-.torch-tl { left: 4.5%; top: 8%; }
-.torch-tr { right: 4.5%; top: 8%; }
-.torch-bl { left: 4.5%; bottom: 4%; }
-.torch-br { right: 4.5%; bottom: 4%; }
-
 @keyframes flameFlicker {
-    0%   { transform: scale(1, 1) skewX(-4deg); opacity: 0.95; }
-    50%  { transform: scale(0.92, 1.14) skewX(5deg); opacity: 1; }
-    100% { transform: scale(1.06, 0.9) skewX(-6deg); opacity: 0.9; }
+    0%   { transform: scale(1, 1) skewX(-5deg); opacity: 0.95; }
+    45%  { transform: scale(0.9, 1.18) skewX(6deg); opacity: 1; }
+    100% { transform: scale(1.08, 0.88) skewX(-7deg); opacity: 0.9; }
 }
 @keyframes torchGlow {
-    0%, 100% { box-shadow: inset 0 0 6px rgba(255, 200, 100, 0.55), 0 0 18px 6px rgba(255, 170, 70, 0.28); }
-    50%      { box-shadow: inset 0 0 8px rgba(255, 210, 110, 0.7), 0 0 24px 9px rgba(255, 180, 80, 0.40); }
+    0%, 100% { opacity: 0.8; }
+    50%      { opacity: 1.1; transform: scale(1.08); }
 }
 
 /* ============================================

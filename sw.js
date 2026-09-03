@@ -2,7 +2,7 @@
    Strategie: network-first pour les fichiers du jeu (toujours a jour),
    fallback cache si hors ligne. Les gros medias passent en cache-first. */
 
-const CACHE_NAME = 'pizzica-v19-1';
+const CACHE_NAME = 'pizzica-v20-1';
 
 const CORE_ASSETS = [
     './',
@@ -10,7 +10,7 @@ const CORE_ASSETS = [
     'style.css',
     'game.js',
     'manifest.webmanifest',
-    'm7.webp',
+    'm8.webp',
     'spect0.webp', 'spect1.webp', 'spect2.webp', 'spect3.webp', 'spect4.webp', 'spect5.webp',
     'w3.webp',
     'tile-antico.jpg',

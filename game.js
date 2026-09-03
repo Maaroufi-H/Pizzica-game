@@ -69,7 +69,7 @@ function tilesForLevel(level) {
 // emoji 💃 anime. Meme hauteur, pieds au bord bas de la boite.
 // ============================================
 const CHARACTERS = {
-    man: [{ id: 'm7', img: 'm7.webp', name: 'Ballerino di pizzica' }],
+    man: [{ id: 'm8', img: 'm8.webp', name: 'Ballerino di pizzica' }],
     woman: [{ id: 'w3', img: 'w3.webp', name: 'Ballerina' }]
 };
 
@@ -278,19 +278,6 @@ class Couple {
             });
             this.container.insertBefore(svg, this.container.firstChild);
         }
-        // V16: quatre petits flambeaux dans les coins internes du carreau
-        if (!this.container.querySelector(':scope > .torch')) {
-            ['tl', 'tr', 'bl', 'br'].forEach((pos, i) => {
-                const tch = document.createElement('span');
-                tch.className = 'torch torch-' + pos;
-                tch.style.animationDelay = (-i * 0.37) + 's';
-                const fl = document.createElement('i');
-                fl.className = 'flame';
-                fl.style.animationDelay = (-i * 0.23) + 's';
-                tch.appendChild(fl);
-                this.container.insertBefore(tch, svg.nextSibling);
-            });
-        }
 
         svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
         const set = (sel, attrs) => {
@@ -344,6 +331,51 @@ class Couple {
             const fits = x - half >= 0 && x + half <= w && y - half >= 0 && y + half <= h;
             el.style.display = fits ? 'block' : 'none';
         }
+        this.updateTorches(w, h, cx, cy, rx, ry, size);
+    }
+
+    /**
+     * V20: flambeaux de feu poses a cote et DERRIERE le public, repartis de
+     * facon heterogene (angles irreguliers, un peu au-dela de l'anneau).
+     */
+    updateTorches(w, h, cx, cy, rx, ry, spSize) {
+        // angles ENTRE les spectateurs (i + 0.5), choix irregulier
+        const slots = [0, 2, 3, 6, 8, 11, 13, 14];
+        const n = 16;
+        const tsize = Math.max(12, Math.round(spSize * 0.7));
+        const existing = this.container.querySelectorAll(':scope > .torch');
+        const need = existing.length !== slots.length;
+        if (need) existing.forEach(e => e.remove());
+        const wheel = this.container.querySelector(':scope > .couple-wheel');
+        const fits = (x, y) => x - tsize * 0.6 >= 0 && x + tsize * 0.6 <= w && y - tsize * 1.15 >= 0 && y + tsize * 0.5 <= h;
+        slots.forEach((si, i) => {
+            const a = ((si + 0.5) / n) * Math.PI * 2 + 0.10 * Math.sin(i * 3.1);
+            let el = need ? null : existing[i];
+            if (!el) {
+                el = document.createElement('span');
+                el.className = 'torch';
+                el.style.animationDelay = (-i * 0.37) + 's';
+                const fl = document.createElement('i');
+                fl.className = 'flame';
+                fl.style.animationDelay = (-i * 0.23) + 's';
+                el.appendChild(fl);
+                if (wheel) this.container.insertBefore(el, wheel); else this.container.appendChild(el);
+            }
+            // derriere le public si la place existe, sinon a cote (sur l'anneau)
+            let placed = false;
+            for (const k of [1.18 + 0.05 * (i % 2), 1.06, 0.96]) {
+                const x = cx + rx * k * Math.sin(a);
+                const y = cy - ry * k * Math.cos(a);
+                if (fits(x, y)) {
+                    el.style.left = x + 'px';
+                    el.style.top = y + 'px';
+                    placed = true;
+                    break;
+                }
+            }
+            el.style.setProperty('--t-size', tsize + 'px');
+            el.style.display = placed ? 'block' : 'none';
+        });
     }
 
     // V7: re-mesurer apres resize/rotation d'ecran, sinon la geometrie
