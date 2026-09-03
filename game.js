@@ -59,35 +59,17 @@ function tilesForLevel(level) {
 }
 
 // ============================================
-// V9: PERSONNAGES SELECTIONNABLES (2 hommes, 2 femmes)
-// Chaque personnage a sa propre danse (classe char-<id> sur le wrapper,
-// animations dediees en CSS). Choix memorise en localStorage.
+// V14: LES DEUX DANSEURS (fixes, aucun choix possible)
+// Sprites animes: lui = illustration plate dessinee pour le jeu, elle =
+// emoji 💃 anime. Meme hauteur, pieds au bord bas de la boite.
 // ============================================
 const CHARACTERS = {
-    man: [
-        { id: 'm1', img: 'm1.png', name: 'Ballerino classico' },
-        { id: 'm2', img: 'm2.png', name: 'Elegante col cappello' }
-    ],
-    woman: [
-        // V12: emoji 💃 ANIME (Noto/Lottie converti en sprite): gambe e
-        // braccia lavorano davvero. Danseuse par defaut.
-        { id: 'w3', img: 'w3.webp', name: 'Ballerina animata' },
-        { id: 'w1', img: 'w1.png', name: 'Ballerina in rosso' },
-        { id: 'w2', img: 'w2.png', name: 'Fata danzante' }
-    ]
+    man: [{ id: 'm3', img: 'm3.webp', name: 'Ballerino' }],
+    woman: [{ id: 'w3', img: 'w3.webp', name: 'Ballerina' }]
 };
 
-const selectedChars = { man: 'm1', woman: 'w3' };
-try {
-    // V12: cle versionnee - la nouvelle danseuse animee est visible d'emblee
-    // meme si une version precedente avait deja memorise un choix
-    const saved = JSON.parse(localStorage.getItem('pizzica-chars-v12') || '{}');
-    if (CHARACTERS.man.some(c => c.id === saved.man)) selectedChars.man = saved.man;
-    if (CHARACTERS.woman.some(c => c.id === saved.woman)) selectedChars.woman = saved.woman;
-} catch (e) { /* localStorage indisponible: defauts */ }
-
 function getChar(role) {
-    return CHARACTERS[role].find(c => c.id === selectedChars[role]) || CHARACTERS[role][0];
+    return CHARACTERS[role][0];
 }
 
 // ============================================
@@ -614,7 +596,6 @@ class PizzicaGame {
 
         // Initialisation
         this.updateLevelDisplay();
-        this.buildCharSelect();
         this.createPreviewCouple();
 
         // V7: re-mesurer la geometrie de tous les couples vivants
@@ -724,33 +705,6 @@ class PizzicaGame {
         }
         this.musicInfo.textContent = `${levelInfo.music}`;
         this.demoLevelInfo.textContent = `Livello ${this.currentLevel} - Durata: ${levelInfo.duration}s - ${levelInfo.tiles} coppie`;
-    }
-
-    // V9: selecteur de personnages sur l'ecran d'accueil
-    buildCharSelect() {
-        document.querySelectorAll('#char-select .char-row').forEach(row => {
-            const role = row.dataset.role;
-            row.querySelectorAll('.char-thumb').forEach(b => b.remove());
-            CHARACTERS[role].forEach(ch => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'char-thumb' + (selectedChars[role] === ch.id ? ' selected' : '');
-                btn.title = ch.name;
-                const img = document.createElement('img');
-                img.src = ch.img;
-                img.alt = ch.name;
-                btn.appendChild(img);
-                btn.addEventListener('click', () => {
-                    selectedChars[role] = ch.id;
-                    try {
-                        localStorage.setItem('pizzica-chars-v12', JSON.stringify(selectedChars));
-                    } catch (e) { /* mode prive */ }
-                    this.buildCharSelect();
-                    this.createPreviewCouple();
-                });
-                row.appendChild(btn);
-            });
-        });
     }
 
     createPreviewCouple() {

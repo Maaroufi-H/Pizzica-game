@@ -293,61 +293,6 @@ body::before {
     margin-top: 5px;
 }
 
-/* ============================================
-   V9 - SELECTION DES PERSONNAGES
-   ============================================ */
-#char-select {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 4px;
-}
-
-.char-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.char-label {
-    color: var(--neon-cyan);
-    font-size: 0.8rem;
-    width: 28px;
-    text-align: right;
-}
-
-button.char-thumb {
-    width: 52px;
-    height: 52px;
-    padding: 4px;
-    margin: 0;
-    border-radius: 12px;
-    background: rgba(22, 22, 58, 0.7);
-    border: 2px solid #5555ff;
-    cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-}
-
-button.char-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block;
-}
-
-button.char-thumb.selected {
-    border-color: var(--neon-gold);
-    box-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
-    transform: scale(1.08);
-}
-
-button.char-thumb:hover {
-    border-color: var(--neon-cyan);
-    box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
-    transform: scale(1.05);
-}
-
 /* Demo preview sur l'accueil - V7: agrandi pour englober completement les danseurs */
 #demo-preview {
     width: 325px;
@@ -825,41 +770,16 @@ button:disabled {
    V9 - DANSE PROPRE A CHAQUE PERSONNAGE
    ============================================ */
 
-/* m2 - l'elegant au chapeau: petits bonds glisses, style levitation */
-.dancer-wrapper.dancing.char-m2 .dancer,
-.dancer-wrapper.dance-step.char-m2 .dancer {
-    animation: levitBounce 0.7s ease-in-out infinite;
+/* V14: les deux sprites dansent deja tout seuls: le dondolio CSS de base
+   reste appena accennato pour ne pas se superposer a leur mouvement */
+.dancer-wrapper.dancing .dancer,
+.dancer-wrapper.dance-step .dancer {
+    animation: subtleSway 0.9s ease-in-out infinite;
 }
 
-@keyframes levitBounce {
-    0%, 100% { transform: translateY(0) rotate(-4deg) scaleY(1); }
-    25% { transform: translateY(-7px) rotate(0deg) scaleY(1.05); }
-    50% { transform: translateY(0) rotate(4deg) scaleY(0.97); }
-    75% { transform: translateY(-7px) rotate(0deg) scaleY(1.05); }
-}
-
-/* w2 - la fee: voltige rapide, battements d'ailes */
-.dancer-wrapper.dancing.char-w2 .dancer,
-.dancer-wrapper.dance-step.char-w2 .dancer {
-    animation: fairyFlutter 0.45s ease-in-out infinite;
-}
-
-@keyframes fairyFlutter {
-    0%, 100% { transform: rotate(-7deg) translateY(0) scaleX(1); }
-    50% { transform: rotate(7deg) translateY(-6px) scaleX(1.06); }
-}
-
-/* m1/w1 - danse classique: bascule marquee sur les pieds, jambes vivantes */
-.dancer-wrapper.dancing.char-m1 .dancer,
-.dancer-wrapper.dancing.char-w1 .dancer {
-    animation: classicStep 0.55s ease-in-out infinite;
-}
-
-@keyframes classicStep {
-    0%, 100% { transform: rotate(-5deg) translateY(0) scaleY(1); }
-    25% { transform: rotate(0deg) translateY(-3px) scaleY(0.96); }
-    50% { transform: rotate(5deg) translateY(0) scaleY(1); }
-    75% { transform: rotate(0deg) translateY(-3px) scaleY(0.96); }
+@keyframes subtleSway {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
 }
 
 /* Petites etoiles scintillantes emises pendant les rotations de croisement,
@@ -1292,9 +1212,6 @@ button:disabled {
     #level-display { font-size: 0.95rem; }
     #demo-preview { width: min(200px, 24vh); height: min(200px, 24vh); }
 
-    /* V9: selecteur compact pour que tout tienne au-dessus du pli */
-    #char-select { gap: 4px; margin-bottom: 2px; }
-    button.char-thumb { width: 44px; height: 44px; padding: 3px; }
 
     button { padding: 12px 30px; font-size: 1rem; }
 
@@ -1348,7 +1265,7 @@ button:disabled {
 
     #game-header h1 { font-size: 1.3rem; }
     #demo-preview { width: min(180px, 22vh); height: min(180px, 22vh); }
-    button.char-thumb { width: 40px; height: 40px; padding: 3px; }
+
 
     /* V7: pleine occupation de l'ecran Android (>80%) */
     #dance-floor {
@@ -1379,7 +1296,7 @@ button:disabled {
     #music-info { font-size: 0.75rem; margin-top: 2px; }
     #demo-preview { width: min(150px, 20vh); height: min(150px, 20vh); margin: 8px 0; }
     #status-text { font-size: 0.8rem; margin: 4px 0; }
-    button.char-thumb { width: 38px; height: 38px; padding: 2px; }
+
     #btn-play { padding: 10px 32px; font-size: 1rem; }
 }
 
@@ -1391,8 +1308,6 @@ button:disabled {
     #game-header { margin-bottom: 0; }
     /* V9: le carreau ne doit pas etre ecrase par le flex en paysage */
     #demo-preview { flex: 0 0 auto; width: min(150px, 40vh); height: min(150px, 40vh); }
-    button.char-thumb { width: 40px; height: 40px; padding: 3px; }
-    .char-label { width: 22px; font-size: 0.7rem; }
 
     /* V7: paysage - les carreaux dominent l'ecran */
     #game-ui-small { display: none; }
@@ -1494,16 +1409,6 @@ button:disabled {
     #demo-hint { font-size: 0.65rem; padding: 5px 9px; margin-bottom: 5px; }
 }
 
-/* V12: la ballerina animata (sprite) danza gia da sola: il dondolio CSS
-   di base resta appena accennato per non sommarsi al suo movimento */
-.dancer-wrapper.dancing.char-w3 .dancer,
-.dancer-wrapper.dance-step.char-w3 .dancer {
-    animation: subtleSway 0.9s ease-in-out infinite;
-}
-
-@keyframes subtleSway {
-    0%, 100% { transform: rotate(-2deg); }
-    50% { transform: rotate(2deg); }
 }
 
 /* V12: laisser la place a l'avviso di divergenza fixe en bas, et rendre
