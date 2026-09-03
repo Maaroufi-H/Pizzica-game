@@ -18,6 +18,11 @@ const CONFIG = {
     // V6 PRO: Taille augmentee de 15% (40 * 1.15 = 46)
     DANCER_SIZE: 46,
     MOVE_DURATION: 2250,
+    // V16: le demi-cercle est legerement plus lent que les translations
+    CIRCLE_DURATION: 2700,
+    // V16: quand le sens de rotation s'inverse (A->B ou B->A), pivot fluide
+    // de transition SANS etoiles - ce n'est PAS un etat de la sequence
+    TURN_TRANSITION: 700,
     // V10: la rotation magique est TRES LENTE et fait UN SEUL tour complet
     // pendant toute la duree de l'etat — le joueur compte 1 unite, sans
     // ambiguite (avant: pirouette 1s en boucle infinie, impossible a compter)
@@ -64,7 +69,7 @@ function tilesForLevel(level) {
 // emoji 💃 anime. Meme hauteur, pieds au bord bas de la boite.
 // ============================================
 const CHARACTERS = {
-    man: [{ id: 'm4', img: 'm4.webp', name: 'Ballerino di pizzica' }],
+    man: [{ id: 'm5', img: 'm5.webp', name: 'Ballerino di pizzica' }],
     woman: [{ id: 'w3', img: 'w3.webp', name: 'Ballerina' }]
 };
 
@@ -118,8 +123,8 @@ const STATE_DURATION = {
     [STATE.D]: CONFIG.PAUSE_DURATION,
     [STATE.E]: CONFIG.MOVE_DURATION,
     [STATE.F]: CONFIG.MOVE_DURATION,
-    [STATE.A]: CONFIG.MOVE_DURATION,
-    [STATE.B]: CONFIG.MOVE_DURATION,
+    [STATE.A]: CONFIG.CIRCLE_DURATION,
+    [STATE.B]: CONFIG.CIRCLE_DURATION,
     [STATE.G]: CONFIG.CROSS_SPIN_DURATION * 2
 };
 
@@ -213,7 +218,7 @@ class Couple {
         const maxByWidth = w / 2 - d / 2 - margin;   // danseur sur les cotes
         this.radiusFar = Math.max(
             tileSize * 0.12,
-            Math.min(tileSize * 0.325, maxByHeight, maxByWidth)
+            Math.min(tileSize * 0.345, maxByHeight, maxByWidth)
         );
         // le petit cercle du croisement garde la meme proportion qu'avant
         this.radiusClose = this.radiusFar * 0.442;
@@ -250,6 +255,19 @@ class Couple {
                 svg.appendChild(l);
             });
             this.container.insertBefore(svg, this.container.firstChild);
+        }
+        // V16: quatre petits flambeaux dans les coins internes du carreau
+        if (!this.container.querySelector(':scope > .torch')) {
+            ['tl', 'tr', 'bl', 'br'].forEach((pos, i) => {
+                const tch = document.createElement('span');
+                tch.className = 'torch torch-' + pos;
+                tch.style.animationDelay = (-i * 0.37) + 's';
+                const fl = document.createElement('i');
+                fl.className = 'flame';
+                fl.style.animationDelay = (-i * 0.23) + 's';
+                tch.appendChild(fl);
+                this.container.insertBefore(tch, svg.nextSibling);
+            });
         }
 
         svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
@@ -325,6 +343,8 @@ class Couple {
         this.currentState = newState;
 
         let duration = CONFIG.MOVE_DURATION;
+        let moveMs = CONFIG.MOVE_DURATION;   // duree du deplacement CSS
+        let deferred = false;                // position deja appliquee / differee
 
         // V6 PRO: Reset animation classes
         this.clearAnimationClasses();
@@ -363,21 +383,37 @@ class Couple {
                 break;
 
             case STATE.A:
-                this.wheelAngle += 180;
-                // V6 PRO: Animation rotation - mouvement expressif
-                this.setSpinDuration(CONFIG.MOVE_DURATION);
-                this.setAnimationClass('rotating');
-                // V15: trainee d'etoiles derriere les danseurs sur le cercle
-                this.startTrail(CONFIG.MOVE_DURATION);
+            case STATE.B: {
+                const dir = (newState === STATE.A) ? 1 : -1;
+                const reversing = (prevState === STATE.A || prevState === STATE.B) && prevState !== newState;
+                moveMs = CONFIG.CIRCLE_DURATION;
+                duration = CONFIG.CIRCLE_DURATION;
+                const go = () => {
+                    this.wheelAngle += dir * 180;
+                    this.clearAnimationClasses();
+                    this.setSpinDuration(CONFIG.CIRCLE_DURATION);
+                    this.setAnimationClass('rotating');
+                    // V15: trainee d'etoiles derriere les danseurs sur le cercle
+                    this.startTrail(CONFIG.CIRCLE_DURATION);
+                    this.applyPosition(false, CONFIG.CIRCLE_DURATION);
+                };
+                if (reversing) {
+                    // V16: on ne repart pas brusquement en sens inverse - les
+                    // danseurs s'arretent et font un pivot fluide de transition
+                    // (rotation standard, SANS etoiles, hors sequence), puis
+                    // seulement ensuite le demi-cercle retour.
+                    duration += CONFIG.TURN_TRANSITION;
+                    this.setSpinDuration(CONFIG.TURN_TRANSITION);
+                    this.setAnimationClass('turn-settle');
+                    const tGo = setTimeout(go, CONFIG.TURN_TRANSITION);
+                    this.internalTimers.push(tGo);
+                    deferred = true;
+                } else {
+                    go();
+                    deferred = true;
+                }
                 break;
-
-            case STATE.B:
-                this.wheelAngle -= 180;
-                // V6 PRO: Animation rotation - mouvement expressif
-                this.setSpinDuration(CONFIG.MOVE_DURATION);
-                this.setAnimationClass('rotating');
-                this.startTrail(CONFIG.MOVE_DURATION);
-                break;
+            }
 
             // V8: CROISEMENT - pirouettes alternees. L'homme tourne sur lui-meme
             // (etoiles), la femme attend, puis echange. Personne n'est fige.
@@ -402,7 +438,7 @@ class Couple {
 
         }
 
-        this.applyPosition(false, CONFIG.MOVE_DURATION);
+        if (!deferred) this.applyPosition(false, moveMs);
         return duration;
     }
 
@@ -481,7 +517,7 @@ class Couple {
         // V8: stopper aussi les phases de croisement et l'emission d'etoiles
         this.clearInternalTimers();
         const classes = ['dancing', 'rotating', 'translating', 'close', 'flip',
-            'static-state', 'cross-spinning', 'magic-spinning', 'dance-step'];
+            'static-state', 'cross-spinning', 'magic-spinning', 'dance-step', 'turn-settle'];
         classes.forEach(cls => {
             this.manWrapper.classList.remove(cls);
             this.womanWrapper.classList.remove(cls);

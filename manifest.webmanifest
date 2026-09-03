@@ -1,14 +1,14 @@
 {
   "name": "Pizzica Master",
   "short_name": "Pizzica",
-  "description": "Gioco di memoria sulla danza pizzica salentina, in un'ambientazione di marmo dell'antica Roma: guarda la sequenza modello e trova la coppia che la riproduce esattamente.",
+  "description": "Gioco di memoria sulla danza pizzica salentina: guarda la sequenza modello e trova la coppia che la riproduce esattamente.",
   "lang": "it",
   "start_url": "/",
   "scope": "/",
   "display": "fullscreen",
   "orientation": "portrait",
-  "background_color": "#17100a",
-  "theme_color": "#17100a",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "icons": [
     {
       "src": "icon-192.png",
