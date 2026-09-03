@@ -1857,6 +1857,11 @@ class PizzicaGame {
     }
 
     getStateName(state) {
+        // V12: la divergence peut tomber APRES la fin d'une des deux
+        // sequences (l'une continue, l'autre est deja finie)
+        if (state === undefined || state === null) {
+            return 'Nessun movimento — la sequenza era gia finita';
+        }
         const names = {
             [STATE.A]: 'Rotazione avanti',
             [STATE.B]: 'Rotazione indietro',

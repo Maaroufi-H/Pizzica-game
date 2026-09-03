@@ -22,6 +22,7 @@ const MIME = {
     '.json': 'application/json; charset=utf-8',
     '.webmanifest': 'application/manifest+json; charset=utf-8',
     '.png': 'image/png',
+    '.webp': 'image/webp',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.svg': 'image/svg+xml',
@@ -34,7 +35,7 @@ const MIME = {
 
 // cache long pour les gros medias immuables, court pour le code du jeu
 function cacheControl(ext) {
-    if (ext === '.mp3' || ext === '.mp4' || ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
+    if (['.mp3', '.mp4', '.png', '.webp', '.jpg', '.jpeg'].includes(ext)) {
         return 'public, max-age=86400';
     }
     return 'public, max-age=300';
