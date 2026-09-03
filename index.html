@@ -83,6 +83,8 @@
 
             <div id="status-text">Premi PLAY per iniziare</div>
             <button id="btn-play">PLAY</button>
+            <!-- V18: signature sous le menu initial -->
+            <div id="credits">Designed by Hatem Maaroufi<small>V2 (09-2026)</small></div>
         </main>
     </div>
 
@@ -142,11 +144,11 @@
                 <p class="comparison-label">Questa è la sequenza che hai selezionato</p>
             </div>
         </div>
-        <div id="comparison-message"></div>
-        <button id="btn-comparison-retry">Coraggio, riproviamo!</button>
-        <button id="btn-comparison-replay">Rivedi la differenza</button>
-        <!-- V12: avviso in basso al momento esatto della divergenza -->
+        <!-- V18: cadre ECCOLO clignotant sous les carreaux, puis le bouton bleu -->
         <div id="divergence-notice"></div>
+        <div id="comparison-message"></div>
+        <button id="btn-comparison-replay">Ripeti l'errore</button>
+        <button id="btn-comparison-retry">Coraggio, riproviamo!</button>
     </div>
 
     <!-- Resultat -->
@@ -163,8 +165,6 @@
     <!-- Fireworks pour victoire -->
     <div id="fireworks-container"></div>
 
-    <!-- Credits -->
-    <div id="credits">Creato all'improvviso da Hatem Maaroufi - 11/2025</div>
 
     <script src="game.js"></script>
 </body>

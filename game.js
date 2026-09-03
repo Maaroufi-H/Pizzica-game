@@ -69,7 +69,7 @@ function tilesForLevel(level) {
 // emoji 💃 anime. Meme hauteur, pieds au bord bas de la boite.
 // ============================================
 const CHARACTERS = {
-    man: [{ id: 'm5', img: 'm5.webp', name: 'Ballerino di pizzica' }],
+    man: [{ id: 'm6', img: 'm6.webp', name: 'Ballerino di pizzica' }],
     woman: [{ id: 'w3', img: 'w3.webp', name: 'Ballerina' }]
 };
 
@@ -1741,7 +1741,7 @@ class PizzicaGame {
         const setNotice = (html, cls) => {
             if (!notice) return;
             notice.className = cls || '';
-            notice.innerHTML = html;
+            notice.innerHTML = '<span class="eccolo">ECCOLO!</span>' + html;
             notice.style.display = 'block';
         };
 
@@ -1758,7 +1758,7 @@ class PizzicaGame {
             this.sequenceTimeouts.push(tHide);
 
             this.comparisonMessage.innerHTML = `<strong>ECCO L'ERRORE!</strong>`;
-            setNotice(`⚠ <strong>QUI le due sequenze si separano</strong> — movimento n. ${divergenceIndex + 1}. Guarda bene: prima quella giusta, poi la tua.`, 'notice-warn');
+            setNotice(`⚠ <strong>QUI le due sequenze si separano</strong> — movimento n. ${divergenceIndex + 1}.<br>Prima quella giusta, poi la tua.`, 'notice-warn');
         }, startDelay + 500);
         this.sequenceTimeouts.push(tFreeze);
 
@@ -1795,7 +1795,7 @@ class PizzicaGame {
                         ✗ Tua scelta: <span style="color: #ff4444;">${userStateName}</span><br>
                         <span style="font-size: 0.9rem; color: #aaa;">Osserva bene la differenza!</span>
                     `;
-                    setNotice(`Rivedi la differenza col pulsante qui sopra, oppure riprova!`, '');
+                    setNotice(`✓ <span style="color:#00ff00">${correctStateName}</span> &nbsp;—&nbsp; ✗ <span style="color:#ff6666">${userStateName}</span>`, '');
 
                     if (this.comparisonUserCouple) {
                         this.comparisonUserCouple.stopAnimations();

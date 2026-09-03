@@ -459,10 +459,10 @@ button:disabled {
     /* V16: ambiance antique SEULEMENT dans le carreau - marbre anthracite en
        perspective, colonnes en ombre, tendant vers le noir */
     background-image:
-        linear-gradient(rgba(6, 8, 18, 0.16), rgba(4, 5, 12, 0.34)),
+        linear-gradient(rgba(10, 14, 40, 0.10), rgba(8, 10, 30, 0.22)),
         url('tile-antico.jpg');
     background-size: cover, cover;
-    background-position: center bottom;
+    background-position: center center;
     border: 2px solid #5555ff;
     border-radius: 10px;
     overflow: hidden;
@@ -1113,16 +1113,22 @@ button:disabled {
    CREDITS
    ============================================ */
 #credits {
-    position: fixed;
-    bottom: 15px;
-    right: 20px;
+    /* V18: signature dans le flux de la page initiale */
+    margin-top: 12px;
     color: rgba(255, 255, 255, 0.75);
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-family: 'Georgia', 'Times New Roman', serif;
     font-style: italic;
     letter-spacing: 1px;
+    text-align: center;
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-    z-index: 5;
+}
+#credits small {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    color: rgba(255, 215, 0, 0.7);
+    margin-top: 2px;
 }
 
 /* ============================================
@@ -1231,8 +1237,7 @@ button:disabled {
     .spotlight { width: 12px; height: 12px; }
     .spotlight-beam { width: 80px; height: 250px; }
 
-    /* V7: sur mobile les credits chevauchent le statut de jeu */
-    #credits { display: none; }
+    #credits { font-size: 0.8rem; margin-top: 8px; }
 }
 
 @media (max-width: 480px) {
@@ -1317,32 +1322,46 @@ button:disabled {
    sequenze si separano, mentre le due danze restano in pausa.
    ============================================ */
 #divergence-notice {
-    position: fixed;
-    left: 50%;
-    bottom: 18px;
-    transform: translateX(-50%);
+    /* V18: dans le flux, juste sous les carreaux; tout le texte clignote */
+    position: static;
+    transform: none;
     max-width: min(92vw, 560px);
+    margin: 8px auto 4px;
     padding: 12px 18px;
     border-radius: 12px;
     background: rgba(8, 8, 12, 0.97);
-    backdrop-filter: blur(3px);
     border: 2px solid var(--neon-cyan);
     color: #fff;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     line-height: 1.35;
     text-align: center;
     z-index: 130;
     display: none;
     box-shadow: 0 0 22px rgba(0, 255, 204, 0.35);
-    animation: noticeIn 0.35s ease-out;
+    animation: noticeBlink 0.9s ease-in-out infinite;
 }
+@keyframes noticeBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+#divergence-notice .eccolo {
+    display: block;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--neon-gold);
+    text-shadow: 0 0 12px var(--neon-gold);
+    margin-bottom: 4px;
+}
+/* le message d'en bas est remplace par le cadre ECCOLO */
+#comparison-message { display: none; }
 
 #divergence-notice strong { color: var(--neon-gold); }
 
 #divergence-notice.notice-warn {
     border-color: var(--neon-gold);
     box-shadow: 0 0 26px rgba(255, 215, 0, 0.55);
-    animation: noticeIn 0.35s ease-out, noticePulse 0.9s ease-in-out 3;
+    animation: noticeBlink 0.9s ease-in-out infinite;
 }
 
 #divergence-notice.notice-ok {
@@ -1406,80 +1425,76 @@ button:disabled {
 
 
 /* ============================================
-   V17 - LANTERNES DANS LES 4 COINS INTERNES DU CARREAU
-   Petite lanterne de fer et de verre, flamme a l'interieur, halo chaud.
-   Entierement contenue dans le carreau (anneau compris).
+   V18 - LAMPES A HUILE ANTIQUES (lucerne en terre cuite) AUX 4 COINS
+   Corps en goutte, bec avec la flamme, anse a l'arriere, halo chaud.
    ============================================ */
 .torch {
     position: absolute;
-    width: 6%;
-    min-width: 14px;
-    aspect-ratio: 1 / 1.45;
+    width: 9%;
+    min-width: 20px;
+    aspect-ratio: 1.9 / 1;
     z-index: 1;
     pointer-events: none;
-    border: 1.5px solid #b8933f;
-    border-radius: 3px 3px 6px 6px;
+    /* corps en terre cuite: goutte (bec a droite) */
+    border-radius: 50% 65% 55% 50% / 60% 70% 40% 40%;
     background:
-        linear-gradient(180deg, rgba(255, 210, 120, 0.30) 0%, rgba(255, 150, 60, 0.14) 60%, rgba(60, 40, 20, 0.35) 100%);
+        radial-gradient(ellipse at 40% 30%, rgba(255, 220, 170, 0.35) 0%, transparent 45%),
+        linear-gradient(180deg, #c8764a 0%, #a5522e 55%, #6e331a 100%);
     box-shadow:
-        inset 0 0 7px rgba(255, 180, 70, 0.55),
-        0 0 18px 6px rgba(255, 160, 60, 0.30);
+        inset 0 -2px 3px rgba(0, 0, 0, 0.45),
+        0 0 18px 6px rgba(255, 170, 70, 0.30);
     animation: torchGlow 1.4s ease-in-out infinite;
 }
-/* toit + anneau */
+/* trou de remplissage + anse */
 .torch::before {
     content: '';
     position: absolute;
-    left: 15%;
-    right: 15%;
-    top: -16%;
-    height: 16%;
-    background: linear-gradient(180deg, #e0b95a, #8d6a26);
-    border-radius: 45% 45% 0 0;
+    left: 38%;
+    top: 22%;
+    width: 18%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, #3a1a0c 0%, #5a2a12 70%);
 }
 .torch::after {
     content: '';
     position: absolute;
-    left: 50%;
-    top: -34%;
-    width: 30%;
-    aspect-ratio: 1;
-    transform: translateX(-50%);
-    border: 1.5px solid #b8933f;
-    border-radius: 50%;
+    left: -10%;
+    top: 12%;
+    width: 24%;
+    height: 60%;
+    border: 2px solid #8a4322;
+    border-right: none;
+    border-radius: 50% 0 0 50% / 50% 0 0 50%;
 }
-/* montants de la lanterne */
-.torch .flame::before {
-    content: '';
-    position: absolute;
-    inset: -100% 0 0 0;
-    pointer-events: none;
-}
+/* flamme au bec (droite) */
 .torch .flame {
     position: absolute;
-    left: 22%;
-    right: 22%;
-    bottom: 12%;
-    aspect-ratio: 1 / 1.35;
+    right: 4%;
+    bottom: 62%;
+    width: 22%;
+    aspect-ratio: 1 / 1.6;
     transform-origin: 50% 100%;
     border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
     background: radial-gradient(ellipse at 50% 85%,
         #fff8d0 0%, #ffd84a 24%, #ff8f22 52%, rgba(220, 70, 10, 0.7) 74%, transparent 100%);
     animation: flameFlicker 0.55s ease-in-out infinite alternate;
 }
-.torch-tl { left: 5%; top: 7%; }
-.torch-tr { right: 5%; top: 7%; }
-.torch-bl { left: 5%; bottom: 4.5%; }
-.torch-br { right: 5%; bottom: 4.5%; }
+/* les lampes de droite regardent vers l'interieur */
+.torch-tr, .torch-br { transform: scaleX(-1); }
+.torch-tl { left: 4%; top: 6%; }
+.torch-tr { right: 4%; top: 6%; }
+.torch-bl { left: 4%; bottom: 5%; }
+.torch-br { right: 4%; bottom: 5%; }
 
 @keyframes flameFlicker {
     0%   { transform: scale(1, 1) skewX(-4deg); opacity: 0.95; }
-    50%  { transform: scale(0.92, 1.12) skewX(5deg); opacity: 1; }
+    50%  { transform: scale(0.92, 1.14) skewX(5deg); opacity: 1; }
     100% { transform: scale(1.06, 0.9) skewX(-6deg); opacity: 0.9; }
 }
 @keyframes torchGlow {
-    0%, 100% { box-shadow: inset 0 0 7px rgba(255, 180, 70, 0.55), 0 0 18px 6px rgba(255, 160, 60, 0.28); }
-    50%      { box-shadow: inset 0 0 9px rgba(255, 190, 80, 0.7), 0 0 24px 9px rgba(255, 170, 60, 0.40); }
+    0%, 100% { box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.45), 0 0 18px 6px rgba(255, 170, 70, 0.28); }
+    50%      { box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.45), 0 0 24px 9px rgba(255, 180, 80, 0.40); }
 }
 
 /* V16: pivot fluide au changement de sens du demi-cercle - une rotation
