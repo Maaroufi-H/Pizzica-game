@@ -459,7 +459,7 @@ button:disabled {
     /* V16: ambiance antique SEULEMENT dans le carreau - marbre anthracite en
        perspective, colonnes en ombre, tendant vers le noir */
     background-image:
-        linear-gradient(rgba(10, 14, 40, 0.10), rgba(8, 10, 30, 0.22)),
+        linear-gradient(rgba(10, 14, 40, 0.05), rgba(8, 10, 30, 0.12)),
         url('tile-antico.jpg');
     background-size: cover, cover;
     background-position: center center;
@@ -485,12 +485,13 @@ button:disabled {
 .guide-svg line {
     fill: none;
     /* V13: guide a peine visible */
-    stroke: rgba(255, 255, 255, 0.10);
+    /* V19: trait sombre, discret mais bien visible sur la pierre claire */
+    stroke: rgba(40, 28, 16, 0.55);
     stroke-width: 1.4;
 }
 
 .guide-svg .g-inner {
-    stroke: rgba(255, 255, 255, 0.05);
+    stroke: rgba(40, 28, 16, 0.32);
     stroke-dasharray: 4 5;
 }
 
@@ -528,6 +529,7 @@ button:disabled {
     left: 50%;
     width: 0;
     height: 0;
+    z-index: 2;   /* V19: les danseurs passent devant le public */
     /* V17: demarrage et arret en douceur (plus de coup de frein) */
     transition: transform var(--move-duration) cubic-bezier(0.42, 0.05, 0.58, 0.95);
 }
@@ -1425,67 +1427,85 @@ button:disabled {
 
 
 /* ============================================
-   V18 - LAMPES A HUILE ANTIQUES (lucerne en terre cuite) AUX 4 COINS
-   Corps en goutte, bec avec la flamme, anse a l'arriere, halo chaud.
+   V19 - LANTERNES DE CALECHE AUX 4 COINS (verre, laiton, toit, anneau)
    ============================================ */
 .torch {
     position: absolute;
-    width: 9%;
-    min-width: 20px;
-    aspect-ratio: 1.9 / 1;
+    width: 6.5%;
+    min-width: 15px;
+    aspect-ratio: 1 / 1.35;
     z-index: 1;
     pointer-events: none;
-    /* corps en terre cuite: goutte (bec a droite) */
-    border-radius: 50% 65% 55% 50% / 60% 70% 40% 40%;
+    /* corps vitre, montants en laiton */
+    border: 2px solid #c9a24a;
+    border-radius: 2px;
     background:
-        radial-gradient(ellipse at 40% 30%, rgba(255, 220, 170, 0.35) 0%, transparent 45%),
-        linear-gradient(180deg, #c8764a 0%, #a5522e 55%, #6e331a 100%);
+        linear-gradient(90deg, rgba(201, 162, 74, 0.55) 0 8%, transparent 8% 92%, rgba(201, 162, 74, 0.55) 92%),
+        linear-gradient(180deg, rgba(255, 225, 150, 0.45) 0%, rgba(255, 170, 70, 0.30) 55%, rgba(120, 80, 30, 0.35) 100%);
     box-shadow:
-        inset 0 -2px 3px rgba(0, 0, 0, 0.45),
+        inset 0 0 6px rgba(255, 200, 100, 0.55),
         0 0 18px 6px rgba(255, 170, 70, 0.30);
     animation: torchGlow 1.4s ease-in-out infinite;
 }
-/* trou de remplissage + anse */
+/* toit en pointe + anneau */
 .torch::before {
     content: '';
     position: absolute;
-    left: 38%;
-    top: 22%;
-    width: 18%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: radial-gradient(circle, #3a1a0c 0%, #5a2a12 70%);
+    left: -14%;
+    right: -14%;
+    top: -26%;
+    height: 26%;
+    background: linear-gradient(180deg, #e6c064 0%, #9c7530 100%);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 .torch::after {
     content: '';
     position: absolute;
-    left: -10%;
-    top: 12%;
-    width: 24%;
-    height: 60%;
-    border: 2px solid #8a4322;
-    border-right: none;
-    border-radius: 50% 0 0 50% / 50% 0 0 50%;
+    left: 50%;
+    top: -44%;
+    width: 34%;
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    border: 2px solid #c9a24a;
+    border-radius: 50%;
 }
-/* flamme au bec (droite) */
+/* bougie + flamme a l'interieur */
 .torch .flame {
     position: absolute;
-    right: 4%;
-    bottom: 62%;
-    width: 22%;
-    aspect-ratio: 1 / 1.6;
+    left: 36%;
+    right: 36%;
+    bottom: 22%;
+    aspect-ratio: 1 / 1.7;
     transform-origin: 50% 100%;
     border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
     background: radial-gradient(ellipse at 50% 85%,
         #fff8d0 0%, #ffd84a 24%, #ff8f22 52%, rgba(220, 70, 10, 0.7) 74%, transparent 100%);
     animation: flameFlicker 0.55s ease-in-out infinite alternate;
 }
-/* les lampes de droite regardent vers l'interieur */
-.torch-tr, .torch-br { transform: scaleX(-1); }
-.torch-tl { left: 4%; top: 6%; }
-.torch-tr { right: 4%; top: 6%; }
-.torch-bl { left: 4%; bottom: 5%; }
-.torch-br { right: 4%; bottom: 5%; }
+.torch .flame::after {
+    content: '';
+    position: absolute;
+    left: 20%;
+    right: 20%;
+    top: 92%;
+    height: 45%;
+    background: #f3ead6;
+    border-radius: 1px;
+}
+/* socle */
+.torch .flame::before {
+    content: '';
+    position: absolute;
+    left: -110%;
+    right: -110%;
+    top: 145%;
+    height: 12%;
+    background: #9c7530;
+}
+.torch-tl { left: 4.5%; top: 8%; }
+.torch-tr { right: 4.5%; top: 8%; }
+.torch-bl { left: 4.5%; bottom: 4%; }
+.torch-br { right: 4.5%; bottom: 4%; }
 
 @keyframes flameFlicker {
     0%   { transform: scale(1, 1) skewX(-4deg); opacity: 0.95; }
@@ -1493,8 +1513,23 @@ button:disabled {
     100% { transform: scale(1.06, 0.9) skewX(-6deg); opacity: 0.9; }
 }
 @keyframes torchGlow {
-    0%, 100% { box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.45), 0 0 18px 6px rgba(255, 170, 70, 0.28); }
-    50%      { box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.45), 0 0 24px 9px rgba(255, 180, 80, 0.40); }
+    0%, 100% { box-shadow: inset 0 0 6px rgba(255, 200, 100, 0.55), 0 0 18px 6px rgba(255, 170, 70, 0.28); }
+    50%      { box-shadow: inset 0 0 8px rgba(255, 210, 110, 0.7), 0 0 24px 9px rgba(255, 180, 80, 0.40); }
+}
+
+/* ============================================
+   V19 - PUBLIC autour du cercle, vu d'en haut, qui applaudit
+   ============================================ */
+.spectator {
+    position: absolute;
+    width: var(--sp-size, 28px);
+    height: var(--sp-size, 28px);
+    margin-left: calc(var(--sp-size, 28px) / -2);
+    margin-top: calc(var(--sp-size, 28px) / -2);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.92;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 
 /* V16: pivot fluide au changement de sens du demi-cercle - une rotation

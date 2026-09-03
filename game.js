@@ -69,7 +69,7 @@ function tilesForLevel(level) {
 // emoji 💃 anime. Meme hauteur, pieds au bord bas de la boite.
 // ============================================
 const CHARACTERS = {
-    man: [{ id: 'm6', img: 'm6.webp', name: 'Ballerino di pizzica' }],
+    man: [{ id: 'm7', img: 'm7.webp', name: 'Ballerino di pizzica' }],
     woman: [{ id: 'w3', img: 'w3.webp', name: 'Ballerina' }]
 };
 
@@ -301,6 +301,49 @@ class Couple {
         set('.g-inner', { cx, cy, r });
         set('.g-v', { x1: cx, y1: cy - R, x2: cx, y2: cy + R });
         set('.g-h', { x1: cx - R, y1: cy, x2: cx + R, y2: cy });
+        this.updateSpectators(w, h, cx, cy, R);
+    }
+
+    /**
+     * V19: le public - des gens vus d'en haut qui applaudissent tout autour du
+     * cercle, tournes vers le centre, melanges (6 variantes non synchronisees).
+     * Places sur un anneau juste au-dela de la portee des danseurs; une place
+     * n'est occupee que si elle tient entierement dans le carreau.
+     */
+    updateSpectators(w, h, cx, cy, R) {
+        const d = this.dancerSize;
+        const size = Math.max(14, Math.round(Math.min(w, h) * 0.105));
+        const half = size * 0.72;                           // demi-diagonale (sprite tourne)
+        // anneau elliptique: le plus large possible sans sortir du carreau,
+        // mais jamais sur les danseurs (ils passent devant de toute facon)
+        const minRing = R + d * 0.30 + size * 0.5;
+        const want = R + d * 0.62 + size * 0.55;
+        const rx = Math.max(minRing, Math.min(want + w * 0.08, w / 2 - half - 2));
+        const ry = Math.max(minRing, Math.min(want + h * 0.08, h / 2 - half - 2));
+        const n = 16;
+        const existing = this.container.querySelectorAll(':scope > .spectator');
+        const need = existing.length !== n;
+        if (need) existing.forEach(e => e.remove());
+        const wheel = this.container.querySelector(':scope > .couple-wheel');
+        for (let i = 0; i < n; i++) {
+            const a = (i / n) * Math.PI * 2 + 0.18 * Math.sin(i * 7.3);
+            const x = cx + rx * Math.sin(a);
+            const y = cy - ry * Math.cos(a);
+            let el = need ? null : existing[i];
+            if (!el) {
+                el = document.createElement('img');
+                el.className = 'spectator';
+                el.src = `spect${(i * 5 + 1) % 6}.webp`;
+                el.alt = '';
+                if (wheel) this.container.insertBefore(el, wheel); else this.container.appendChild(el);
+            }
+            el.style.setProperty('--sp-size', size + 'px');
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.transform = `rotate(${a * 180 / Math.PI + 180}deg)`;
+            const fits = x - half >= 0 && x + half <= w && y - half >= 0 && y + half <= h;
+            el.style.display = fits ? 'block' : 'none';
+        }
     }
 
     // V7: re-mesurer apres resize/rotation d'ecran, sinon la geometrie
