@@ -974,25 +974,38 @@ class PizzicaGame {
         try { this.playerName = localStorage.getItem('pizzica-player') || ''; } catch (e) { this.playerName = ''; }
         this.playerInput.value = this.playerName;
         const syncPlay = () => { this.playerName = this.playerInput.value.replace(/\s+/g, ' ').trim(); this.btnPlay.disabled = this.playerName.length < 2; };
-        this.playerInput.addEventListener('input', () => { this.playerLogged = false; syncPlay(); });
+        this.playerInput.addEventListener('input', () => { this.playerLogged = false; syncPlay(); this.updateAdminUI(); });
+        // V22: profilo di debug «hatem_admin» (richiede il token amministratore gia' inserito
+        // nella pagina di amministrazione, stesso browser): scelta libera del livello e salto
+        // del livello senza indovinare, per provare i livelli avanzati.
+        this.adminPanel = document.getElementById('admin-panel');
+        this.btnAdminSkip = document.getElementById('btn-admin-skip');
+        const sel = document.getElementById('admin-level');
+        Object.keys(LEVELS).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = `${k} — ${LEVELS[k].name} (${LEVELS[k].tiles} tessere, ${LEVELS[k].duration}s)`; sel.appendChild(o); });
+        document.getElementById('btn-admin-go').addEventListener('click', () => {
+            if (!this.isAdminPlayer()) return;
+            this.currentLevel = Math.max(1, Math.min(CONFIG.MAX_LEVEL, parseInt(sel.value, 10) || 1));
+            this.playerLogged = true; this.updateLevelDisplay();
+            this.playerInfo.textContent = `Modalità admin: livello ${this.currentLevel} pronto (premi PLAY)`;
+        });
+        this.btnAdminSkip.addEventListener('click', () => this.adminSkip());
+        this.updateAdminUI();
         this.playerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !this.btnPlay.disabled) this.beginPlay(); });
         syncPlay();
         this.btnPlay.addEventListener('click', () => this.beginPlay());
         // V22: musica di accoglienza (menu, tutorial, nome): parte al primo gesto
         // dell'utente (i browser bloccano l'audio automatico) e finisce quando inizia il livello.
         this.homeMusic = document.getElementById('audio-home');
-        this.homeHint = document.getElementById('home-sound-hint');
-        // I browser vietano il SUONO prima del primo gesto dell'utente: la musica parte
-        // subito ma MUTA (sempre permesso), e al primo tocco/tasto viene semplicemente
-        // smutata: cosi' e' gia' in corso quando il giocatore la sente.
-        this.homeMusic.muted = true;
-        this.homeMusic.addEventListener('playing', () => { if (!this.homeMusic.muted) this.homeHint.style.display = 'none'; });
-        this.homeMusic.addEventListener('volumechange', () => { if (!this.homeMusic.muted && !this.homeMusic.paused) this.homeHint.style.display = 'none'; });
-        const tryHome = () => this.playHomeMusic();
-        tryHome();
-        const unmute = () => { if (this.homeMusic.muted) { this.homeMusic.muted = false; } this.playHomeMusic(); };
-        ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(ev => document.addEventListener(ev, unmute, { passive: true }));
-        document.addEventListener('visibilitychange', () => { if (!document.hidden) tryHome(); });
+        // I browser vietano il suono prima del primo gesto dell'utente: lo schermo
+        // d'ingresso «START PIZZICA GAME» raccoglie quel gesto, la musica di accoglienza
+        // parte all'istante e si entra nel menu (continua nel tutorial, finisce col livello).
+        this.startScreen = document.getElementById('start-screen');
+        document.getElementById('btn-start').addEventListener('click', () => {
+            this.homeMusic.muted = false;
+            this.playHomeMusic();
+            this.startScreen.style.display = 'none';
+        });
+        document.addEventListener('visibilitychange', () => { if (!document.hidden && this.startScreen.style.display === 'none') this.playHomeMusic(); });
         // V22: tutorial con la sola ballerina
         this.tutorialScreen = document.getElementById('tutorial-screen');
         this.tutorialPage = 0; this.tutorialCouple = null; this.tutorialOpen = false;
@@ -1221,6 +1234,38 @@ class PizzicaGame {
         this.homeScreen.style.display = 'flex';
     }
 
+    isAdminPlayer() {
+        let tok = '';
+        try { tok = localStorage.getItem('pizzica-admin-token') || ''; } catch (e) { tok = ''; }
+        return this.playerName.toLowerCase() === 'hatem_admin' && tok.length >= 16;
+    }
+
+    updateAdminUI() {
+        const admin = this.isAdminPlayer();
+        this.adminPanel.style.display = admin ? 'flex' : 'none';
+        if (this.playerName.toLowerCase() === 'hatem_admin' && !admin) {
+            this.playerInfo.textContent = 'Profilo admin: apri prima la pagina di amministrazione e inserisci il token (stesso browser), poi torna qui.';
+        }
+        if (!admin) this.btnAdminSkip.style.display = 'none';
+    }
+
+    // salto del livello (solo admin): dalla demo o dalle tessere, direttamente alla vittoria
+    adminSkip() {
+        if (!this.isAdminPlayer() || !this.isPlaying) return;
+        this.cancelAllSequences();
+        this.stopDemoTimer();
+        if (this.gameScreen.style.display !== 'flex') {
+            this.demoOverlay.style.display = 'none';
+            this.homeScreen.style.display = 'none';
+            this.gameScreen.style.display = 'flex';
+            this.countdown.style.display = 'none';
+            this.createDanceFloor();
+        }
+        this.correctTileId = 0;
+        this.isGameActive = true;
+        this.handleTileClick(0);
+    }
+
     // V22: PLAY -> prima il login del giocatore (ripresa del livello), poi la demo
     async beginPlay() {
         if (this.btnPlay.disabled) return;
@@ -1235,7 +1280,9 @@ class PizzicaGame {
         let saved = 1;
         try { saved = parseInt(localStorage.getItem('pizzica-level-' + name.toLowerCase()) || '1', 10) || 1; } catch (e) { saved = 1; }
         try {
-            const r = await fetch('/api/player/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const ctl = new AbortController(); const tmo = setTimeout(() => ctl.abort(), 5000);
+            const r = await fetch('/api/player/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }), signal: ctl.signal });
+            clearTimeout(tmo);
             if (r.ok) {
                 const p = await r.json();
                 saved = Math.max(1, Math.min(CONFIG.MAX_LEVEL, parseInt(p.level, 10) || 1));
@@ -1251,6 +1298,7 @@ class PizzicaGame {
         this.currentLevel = saved;
         this.playerLogged = true;
         this.updateLevelDisplay();
+        this.updateAdminUI();
     }
 
     // salva il livello da cui riprendere (dopo ogni livello superato)
@@ -1285,6 +1333,7 @@ class PizzicaGame {
 
         // Activer les projecteurs
         this.activateSpotlights();
+        this.btnAdminSkip.style.display = this.isAdminPlayer() ? 'block' : 'none';
 
         // Jouer la musique
         this.playLevelMusic();
@@ -1915,6 +1964,7 @@ class PizzicaGame {
 
     handleTileClick(tileId) {
         if (!this.isGameActive) return;
+        this.btnAdminSkip.style.display = 'none';
 
         this.isGameActive = false;
         this.isPlaying = false;

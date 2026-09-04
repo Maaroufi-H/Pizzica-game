@@ -22,10 +22,10 @@
 
     <!-- Audio elements pour chaque niveau -->
     <audio id="audio-level-1" src="Pizzicarella.mp3" loop preload="auto"></audio>
-    <audio id="audio-level-2" src="Beppe Junior- Pizzica Tarantata.mp3" loop preload="auto"></audio>
-    <audio id="audio-level-3" src="pizzica-salento-btq-dal7.mp3" loop preload="auto"></audio>
-    <audio id="audio-level-4" src="musica-livello-4.mp3" loop preload="auto"></audio>
-    <audio id="audio-level-5" src="musica-livello-5.mp3" loop preload="auto"></audio>
+    <audio id="audio-level-2" src="Beppe Junior- Pizzica Tarantata.mp3" loop preload="none"></audio>
+    <audio id="audio-level-3" src="pizzica-salento-btq-dal7.mp3" loop preload="none"></audio>
+    <audio id="audio-level-4" src="musica-livello-4.mp3" loop preload="none"></audio>
+    <audio id="audio-level-5" src="musica-livello-5.mp3" loop preload="none"></audio>
     <!-- V22: musica di accoglienza (menu / tutorial), finisce quando inizia il livello -->
     <audio id="audio-home" src="musica-accoglienza.mp3" loop preload="auto"></audio>
 
@@ -52,6 +52,19 @@
     </div>
 
     <!-- ============================================
+         V22: SCHERMO D'INGRESSO - un solo tocco autorizza il suono nel browser:
+         al clic parte la musica di accoglienza e si entra nel menu
+         ============================================ -->
+    <div id="start-screen">
+        <div id="start-box">
+            <div id="start-school">Scuola di Ballo LORETO/PORTA ROMANA</div>
+            <h1>Pizzica Master</h1>
+            <button id="btn-start">&#9654; START PIZZICA GAME</button>
+            <div id="start-note">&#128266; con musica</div>
+        </div>
+    </div>
+
+    <!-- ============================================
          ECRAN D'ACCUEIL (avec demo en arret)
          ============================================ -->
     <div id="home-screen">
@@ -75,7 +88,6 @@
         <!-- Zone centrale avec demo -->
         <main id="home-main">
             <!-- V22: finche' il browser tiene la musica muta (nessun gesto ancora) -->
-            <div id="home-sound-hint">&#128266; Tocca lo schermo per sentire la musica</div>
             <header id="game-header">
                 <div id="school-name">Scuola di Ballo LORETO/PORTA ROMANA</div>
                 <h1>Pizzica Master</h1>
@@ -91,7 +103,14 @@
             <!-- V22: nome del giocatore (progresso salvato e ripreso) -->
             <div id="player-box">
                 <input type="text" id="player-name" placeholder="Il tuo nome" maxlength="24" autocomplete="nickname" spellcheck="false">
-                <div id="player-info">Scrivi il tuo nome: il livello raggiunto viene salvato e ripreso la prossima volta.</div>
+                <div id="player-info">Scrivi il tuo nome: il livello raggiunto viene salvato e ripreso la prossima volta <b>quando reinserisci lo stesso nome</b>. Ricordati bene il tuo nome &#128521;</div>
+            </div>
+            <!-- V22: profilo di debug hatem_admin -->
+            <div id="admin-panel" style="display: none;">
+                <span>&#128736; Modalit&agrave; admin &mdash; livello:</span>
+                <select id="admin-level"></select>
+                <button id="btn-admin-go">VAI</button>
+                <small>durante il livello: &#9197; salta senza indovinare</small>
             </div>
             <button id="btn-play" disabled>PLAY</button>
             <button id="btn-tutorial">TUTORIAL</button>
@@ -135,7 +154,6 @@
     <div id="demo-overlay">
         <h2>SEQUENZA DA SEGUIRE</h2>
         <!-- V12: promemoria sempre visibile (anche durante il countdown) -->
-        <div id="demo-hint">✦ A ogni incrocio la <strong>piroetta sul posto</strong> &egrave; <strong>un movimento della sequenza</strong>: contala! La tipologia di danza non conta.</div>
         <div id="demo-level-info">Livello 1 - Durata: 10s</div>
         <div id="demo-timer">10</div>
         <div id="demo-stage" class="tile demo-tile"></div>
@@ -144,6 +162,9 @@
         </div>
         <button id="btn-replay">RIVEDI MODELLO</button>
     </div>
+
+    <!-- V22: salto del livello (solo profilo admin) -->
+    <button id="btn-admin-skip" style="display: none;">&#9197; SALTA LIVELLO (admin)</button>
 
     <!-- Countdown -->
     <div id="countdown">3</div>
