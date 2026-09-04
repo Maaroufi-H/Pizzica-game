@@ -2167,6 +2167,8 @@ class PizzicaGame {
 
         // Jouer le meme etat sur les deux couples
         const state = correctSeq[currentIndex];
+        // V22: sotto ogni carreau il nome dello stato in corso (identico fino alla divergenza)
+        this.setComparisonLabels(`${currentIndex + 1}. ${this.getStateName(state)}`, `${currentIndex + 1}. ${this.getStateName(state)}`, '', '');
         const duration1 = this.comparisonDemoCouple.transitionTo(state);
         const duration2 = this.comparisonUserCouple.transitionTo(state);
         const maxDuration = Math.max(duration1, duration2);
@@ -2211,6 +2213,13 @@ class PizzicaGame {
      * G/H durent plus que les 2500ms historiques). Tous les timeouts sont
      * traques dans sequenceTimeouts pour etre annulables.
      */
+    // V22: etichette (stato della macchina) sotto i due carreaux
+    setComparisonLabels(demoText, userText, demoCls, userCls) {
+        const d = document.getElementById('comparison-label-demo'), u = document.getElementById('comparison-label-user');
+        if (d) { d.textContent = demoText; d.className = 'comparison-label ' + (demoCls || ''); }
+        if (u) { u.textContent = userText; u.className = 'comparison-label ' + (userCls || ''); }
+    }
+
     playDivergentStates(correctSeq, userSeq, divergenceIndex, startDelay) {
         const notice = this.divergenceNotice;
         const setNotice = (html, cls) => {
@@ -2232,8 +2241,9 @@ class PizzicaGame {
             }, 600);
             this.sequenceTimeouts.push(tHide);
 
-            this.comparisonMessage.innerHTML = `<strong>ECCO L'ERRORE!</strong>`;
+            this.comparisonMessage.innerHTML = ``;
             setNotice(`⚠ <strong>QUI le due sequenze si separano</strong> — movimento n. ${divergenceIndex + 1}.<br>Prima quella giusta, poi la tua.`, 'notice-warn');
+            this.setComparisonLabels(`${divergenceIndex + 1}. ${this.getStateName(correctSeq[divergenceIndex])}`, `${divergenceIndex + 1}. ${this.getStateName(userSeq[divergenceIndex])}`, 'label-ok', 'label-bad');
         }, startDelay + 500);
         this.sequenceTimeouts.push(tFreeze);
 
@@ -2324,17 +2334,19 @@ class PizzicaGame {
         if (state === undefined || state === null) {
             return 'Nessun movimento — la sequenza era gia finita';
         }
+        // V22: vocabolario della macchina a stati (lo stesso del tutorial)
         const names = {
-            [STATE.A]: 'Rotazione avanti',
-            [STATE.B]: 'Rotazione indietro',
-            [STATE.C]: 'Piroetta sul posto ✦ (lontani)',
-            [STATE.D]: 'Piroetta sul posto ✦ (vicini)',
-            [STATE.E]: 'Traslazione avanti',
-            [STATE.F]: 'Traslazione indietro',
-            [STATE.G]: 'Incrocio: giri alternati ✦',
-            [STATE.K]: 'Quarto di giro (orario)',
-            [STATE.L]: 'Quarto di giro (antiorario)',
-            [STATE.G]: 'Incrocio: giri alternati ✦'
+            [STATE.A]: 'Mezzo giro orario',
+            [STATE.B]: 'Mezzo giro antiorario',
+            [STATE.C]: 'Piroetta ✦',
+            [STATE.D]: 'Piroetta al centro ✦',
+            [STATE.E]: 'Avanzata verso il centro',
+            [STATE.F]: 'Ritorno indietro',
+            [STATE.G]: 'Incrocio al centro ✦ (piroette alternate)',
+            [STATE.K]: 'Quarto di giro orario',
+            [STATE.L]: 'Quarto di giro antiorario',
+            [STATE.M]: 'Tre quarti di giro orario',
+            [STATE.N]: 'Tre quarti di giro antiorario'
         };
         return names[state] || 'Sconosciuto';
     }

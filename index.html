@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <title>Pizzica Master</title>
-    <link rel="stylesheet" href="style.css?v=2209">
+    <link rel="stylesheet" href="style.css?v=2210">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -182,12 +182,13 @@
             <div class="comparison-side">
                 <h3>✓ SEQUENZA CORRETTA</h3>
                 <div id="comparison-demo" class="tile demo-tile"></div>
-                <p class="comparison-label">Questa è la sequenza modello da seguire</p>
+                <!-- V22: stato della macchina in corso, sotto ogni carreau -->
+                <p class="comparison-label" id="comparison-label-demo">&nbsp;</p>
             </div>
             <div class="comparison-side">
                 <h3>✗ TUA SCELTA</h3>
                 <div id="comparison-user" class="tile demo-tile"></div>
-                <p class="comparison-label">Questa è la sequenza che hai selezionato</p>
+                <p class="comparison-label" id="comparison-label-user">&nbsp;</p>
             </div>
         </div>
         <!-- V18: cadre ECCOLO clignotant sous les carreaux, puis le bouton bleu -->
@@ -212,6 +213,6 @@
     <div id="fireworks-container"></div>
 
 
-    <script src="game.js?v=2209"></script>
+    <script src="game.js?v=2210"></script>
 </body>
 </html>
