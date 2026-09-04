@@ -2,13 +2,13 @@
    Strategie: network-first pour les fichiers du jeu (toujours a jour),
    fallback cache si hors ligne. Les gros medias passent en cache-first. */
 
-const CACHE_NAME = 'pizzica-v27-7';
+const CACHE_NAME = 'pizzica-v27-9';
 
 const CORE_ASSETS = [
     './',
     'index.html',
-    'style.css?v=2207',
-    'game.js?v=2207',
+    'style.css?v=2209',
+    'game.js?v=2209',
     'manifest.webmanifest',
     'm9.webp', 'm10b.webp', 'm11b.webp', 'm12b.webp', 'w4b.webp', 'w5c.webp', 'w6c.webp', 'm13.webp', 'w7c.webp',
     'spect0.webp', 'spect1.webp', 'spect2.webp', 'spect3.webp', 'spect4.webp', 'spect5.webp',
@@ -63,9 +63,11 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Network-first pour le reste
+    // Network-first pour le reste — V22: la richiesta di rete SCAVALCA la cache HTTP del
+    // browser (altrimenti html/css/js restavano vecchi per minuti)
+    const fresh = req.mode === 'navigate' ? fetch(req.url, { cache: 'no-cache' }) : fetch(req, { cache: 'no-cache' });
     event.respondWith(
-        fetch(req)
+        fresh
             .then((resp) => {
                 if (resp.ok && resp.status === 200) {
                     const copy = resp.clone();

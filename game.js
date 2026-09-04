@@ -2393,6 +2393,16 @@ document.addEventListener('DOMContentLoaded', () => {
 // V7: service worker (PWA / Trusted Web Activity pour le Play Store)
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        // V22: aggiornamento automatico — quando un nuovo service worker prende il controllo
+        // la pagina si ricarica da sola (una volta), cosi' si vede sempre l'ultima versione
+        let reloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (reloaded || !navigator.serviceWorker.controller) return;
+            reloaded = true; location.reload();
+        });
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+            reg.update().catch(() => {});
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+        }).catch(() => {});
     });
 }
