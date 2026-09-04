@@ -20,8 +20,8 @@
     "path": "C:\\Users\\maahat\\Documents\\Pizzica-game-keys\\pizzica-release.keystore",
     "alias": "pizzica"
   },
-  "appVersionName": "1.0.0",
-  "appVersionCode": 1,
+  "appVersionName": "2.0.0",
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://apps.marofai.site/manifest.webmanifest",
