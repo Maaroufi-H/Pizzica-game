@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "site.marofai.apps.pizzica",
+    "sha256_cert_fingerprints": [
+      "B7:AE:04:C5:8C:17:21:5A:71:81:D9:0F:FA:B0:C1:86:CF:EC:4B:68:78:BB:62:04:09:76:C0:84:DC:00:A2:4E"
+    ]
+  }
+}]
