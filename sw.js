@@ -2,13 +2,13 @@
    Strategie: network-first pour les fichiers du jeu (toujours a jour),
    fallback cache si hors ligne. Les gros medias passent en cache-first. */
 
-const CACHE_NAME = 'pizzica-v27-6';
+const CACHE_NAME = 'pizzica-v27-7';
 
 const CORE_ASSETS = [
     './',
     'index.html',
-    'style.css',
-    'game.js',
+    'style.css?v=2207',
+    'game.js?v=2207',
     'manifest.webmanifest',
     'm9.webp', 'm10b.webp', 'm11b.webp', 'm12b.webp', 'w4b.webp', 'w5c.webp', 'w6c.webp', 'm13.webp', 'w7c.webp',
     'spect0.webp', 'spect1.webp', 'spect2.webp', 'spect3.webp', 'spect4.webp', 'spect5.webp',
@@ -21,7 +21,8 @@ const CORE_ASSETS = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(CORE_ASSETS))
+            // V22: la precache scavalca la cache HTTP del browser (altrimenti restava il vecchio CSS/JS)
+            .then((cache) => cache.addAll(CORE_ASSETS.map((u) => new Request(u, { cache: 'reload' }))))
             .then(() => self.skipWaiting())
     );
 });

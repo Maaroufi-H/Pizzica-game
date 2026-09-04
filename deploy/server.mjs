@@ -39,6 +39,8 @@ function cacheControl(ext, name) {
     if (['.mp3', '.mp4', '.png', '.webp', '.jpg', '.jpeg'].includes(ext)) {
         return 'public, max-age=86400';
     }
+    // V22: html/css/js/json sempre rivalidati (il browser mostrava per 5 min la vecchia versione)
+    if (['.html', '.css', '.js', '.mjs', '.json', '.webmanifest'].includes(ext)) return 'no-cache';
     return 'public, max-age=300';
 }
 
