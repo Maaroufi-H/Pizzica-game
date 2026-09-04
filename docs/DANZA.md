@@ -142,9 +142,14 @@ le altre si tiene una boucle energica (≥ 55 % dell'energia massima) che si ric
 49° di rotazione) è ricampionata su 80 immagini a 25 img/s (`--nout 80`), cioè ×0,5 della velocità reale.
 Stesso filtro per la salsa d (60_01): la vecchia boucle conteneva mezzo giro (165°), la nuova 18°.
 
-**Foulard della pizzica (V20)**: non più un fazzolettino statico ma un **foulard lungo** (36 % dell'altezza), bianco con
-bordo rosso, tenuto nella mano più alta. È dinamico: la sua direzione è la somma della gravità e dell'opposto della velocità
-della mano (calcolata sulle immagini vicine della capture), e ondeggia con due onde per ciclo, così il loop resta continuo.
+**Foulard della pizzica (V20)**: un **foulard lungo** (58 % dell'altezza), bianco con bordo rosso, tenuto nella mano più
+alta per tutta la boucle. Non è disegnato con una formula ma **simulato fisicamente** (`simulate_scarf`, motore a corda di
+Verlet come nei giochi): 20 punti legati da vincoli di lunghezza, il primo inchiodato alla mano (posizione reale della mano
+nella capture, compresa l'altezza del bacino durante i saltelli); gravità ridotta (seta), attrito dell'aria anisotropo (il
+nastro resiste allo spostamento perpendicolare e quindi **fila nella scia della mano**), leggera rigidità di flessione e
+vincoli anti-forcina (non si ripiega in pallina), un flottement periodico. La simulazione gira per 6 boucle e si tiene
+l'ultima; gli ultimi 40 % vengono fusi con la boucle precedente per un loop senza cucitura. Lo sprite è normalizzato sul
+**corpo solo** (bbox senza foulard) per restare alto quanto gli altri.
 
 **Charleston c (V20)**: stesso filtro `--maxyaw 50` e velocità ×0,6 (`--nout 64`).
 
