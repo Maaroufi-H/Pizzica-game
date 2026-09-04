@@ -63,6 +63,11 @@
         <tbody></tbody>
     </table>
 
+    <div class="lib" id="players">
+        <h2>Giocatori e progresso <button class="sec" id="btn-players" style="margin-left:10px">Aggiorna</button></h2>
+        <div id="players-body">Inserisci il token e premi «Aggiorna» per vedere i giocatori.</div>
+    </div>
+
     <div class="lib" id="history">
         <h2>Storico delle matrici salvate</h2>
         <div id="hist-body">Nessun salvataggio ancora.</div>
@@ -105,7 +110,7 @@
         ]
     };
     const STATES = [
-        ['REST',   'Riposo con piroetta (stato C)', 'fermi sul cerchio esterno, girano su se stessi'],
+        ['REST',   'Piroetta sul cerchio (stato C)', 'a ogni incrocio, UNA piroetta prima del passo successivo'],
         ['E_V',    'Avvicinamento verticale (E)', 'traslazione verso il centro sulla linea verticale'],
         ['F_V',    'Ritorno verticale (F)', 'ritorno al cerchio sulla linea verticale'],
         ['E_H',    'Avvicinamento orizzontale (E)', 'dopo un quarto di giro: verso il centro in orizzontale'],
@@ -114,8 +119,7 @@
         ['B',      'Mezzo giro antiorario (B)', 'mezzo cerchio con scia di stelle'],
         ['K',      'Quarto di giro orario (K)', ''],
         ['L',      'Quarto di giro antiorario (L)', ''],
-        ['G',      'Incrocio al centro (G)', 'piroette alternate'],
-        ['PIVOT',  'Pivot di transizione', 'al cambio di senso, senza stelle'],
+        ['G',      'Incrocio al centro (G)', 'la piroetta al centro: piroette alternate, poi ritorno obbligatorio'],
         ['IDLE',   'Attesa del clic', 'dopo la sequenza, mentre il giocatore sceglie']
     ];
     const DEFAULTS = { man: {}, woman: {} };
@@ -187,12 +191,29 @@
         else if (r.status === 401) say('NON salvata: token non valido. Il token amministratore ha 32 caratteri e si trova nel file ADMIN_TOKEN.txt (cartella Pizzica-game-keys).');
         else say(`NON salvata: errore ${r.status}: ${await r.text()}`);
     }
+    async function loadPlayers() {
+        const token = $('#token').value.trim();
+        if (!token) { $('#players-body').textContent = 'Inserisci il token amministratore per vedere i giocatori.'; return; }
+        try {
+            const r = await fetch('/api/players', { headers: { 'X-Admin-Token': token }, cache: 'no-store' });
+            if (r.status === 401) { $('#players-body').textContent = 'Token non valido (file ADMIN_TOKEN.txt, 32 caratteri).'; return; }
+            if (!r.ok) { $('#players-body').textContent = 'Elenco non disponibile: ' + await r.text(); return; }
+            const rows = await r.json();
+            if (!rows.length) { $('#players-body').textContent = 'Nessun giocatore registrato.'; return; }
+            const f = d => new Date(d).toLocaleString('it-IT');
+            $('#players-body').innerHTML = `<div style="font-size:.8rem;color:#aaa;margin-bottom:6px">${rows.length} giocatori — ordinati per ultima partita</div>` +
+                '<table><thead><tr><th>Giocatore</th><th>Riprende dal livello</th><th>Record</th><th>Percorsi completi</th><th>Prima partita</th><th>Ultima partita</th></tr></thead><tbody>' +
+                rows.map(p => `<tr><td><b>${p.name}</b></td><td>${p.level}</td><td>livello ${p.best_level}</td><td>${p.games}</td><td>${f(p.created_at)}</td><td>${f(p.updated_at)}</td></tr>`).join('') + '</tbody></table>';
+        } catch (e) { $('#players-body').textContent = 'Errore: ' + e.message; }
+    }
+    $('#btn-players').addEventListener('click', loadPlayers);
     $('#btn-load').addEventListener('click', load);
     $('#btn-save').addEventListener('click', save);
     $('#btn-reset').addEventListener('click', () => { config = JSON.parse(JSON.stringify(DEFAULTS)); render(); say('Valori di base ripristinati (non ancora salvati).'); });
     $('#token').addEventListener('input', () => { $('#btn-save').disabled = !$('#token').value; });
     $('#token').value = localStorage.getItem('pizzica-admin-token') || '';
     load();
+    if ($('#token').value) loadPlayers();
     </script>
 </body>
 </html>

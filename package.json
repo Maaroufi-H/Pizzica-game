@@ -1,0 +1,8 @@
+{
+  "name": "pizzica-game",
+  "private": true,
+  "description": "Pizzica Master - server statico + API (deploy/server.mjs)",
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}

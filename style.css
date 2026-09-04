@@ -1552,3 +1552,64 @@ button:disabled {
     20% { opacity: 1; transform: translate(-50%, -50%) scale(var(--tsz, 1)); }
     100% { opacity: 0; transform: translate(-50%, -50%) scale(calc(var(--tsz, 1) * 0.35)); }
 }
+
+
+/* ============================================
+   V22: TUTORIAL (sola ballerina) + bottone
+   ============================================ */
+#btn-tutorial {
+    margin-top: 10px;
+    padding: 10px 28px;
+    border-radius: 30px;
+    border: 2px solid #00ffcc;
+    background: rgba(0, 255, 204, 0.08);
+    color: #00ffcc;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+#btn-tutorial:hover { background: rgba(0, 255, 204, 0.2); }
+#tutorial-screen {
+    position: relative;
+    z-index: 5;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 10px;
+    padding: 14px 16px;
+    color: #fff;
+    text-align: center;
+}
+#tutorial-title { color: #ff0055; letter-spacing: 3px; text-transform: uppercase; margin: 0; font-size: 1.4rem; }
+#tutorial-text { max-width: 620px; font-size: 0.95rem; line-height: 1.45; color: #ddd; margin: 0; }
+#tutorial-text b { color: #ffd700; }
+#tutorial-stage { width: min(320px, 44vh); height: min(320px, 44vh); }
+#tutorial-nav { display: flex; align-items: center; gap: 22px; margin-top: 4px; }
+#tut-page { color: #00ffcc; font-weight: bold; letter-spacing: 2px; min-width: 60px; }
+.tut-arrow {
+    width: 54px; height: 54px; border-radius: 50%;
+    border: 2px solid #ffd700; background: rgba(255, 215, 0, 0.12); color: #ffd700;
+    font-size: 1.3rem; cursor: pointer;
+}
+.tut-arrow:hover { background: rgba(255, 215, 0, 0.3); }
+#tut-close {
+    margin-top: 4px; padding: 9px 22px; border-radius: 30px; border: 0;
+    background: linear-gradient(135deg, #ff0055, #cc0044); color: #fff; font-weight: bold; cursor: pointer;
+}
+@media (max-width: 480px) {
+    #tutorial-text { font-size: 0.85rem; }
+    #tutorial-stage { width: min(260px, 38vh); height: min(260px, 38vh); }
+}
+
+/* V22: giocatore */
+#player-box { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 4px 0 8px; }
+#player-name {
+    background: rgba(22, 22, 58, 0.75); color: #fff; border: 2px solid #5555ff; border-radius: 30px;
+    padding: 9px 18px; font-size: 1rem; text-align: center; width: min(260px, 80vw); letter-spacing: 1px; outline: none;
+}
+#player-name:focus { border-color: #00ffcc; box-shadow: 0 0 10px rgba(0, 255, 204, 0.4); }
+#player-info { color: #00ffcc; font-size: 0.75rem; max-width: 320px; text-align: center; min-height: 1.1em; }
+#btn-play:disabled { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.6); }

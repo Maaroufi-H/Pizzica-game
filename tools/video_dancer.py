@@ -245,6 +245,7 @@ def export_all(woman):
 
 if __name__ == '__main__':
     if sys.argv[1:] and sys.argv[1] in ('--man', '--woman'):
+        if len(sys.argv) > 3 and sys.argv[2] == '--bpms': BPMS = tuple(int(x) for x in sys.argv[3].split(','))
         export_all(sys.argv[1] == '--woman'); sys.exit(0)
     for a in sys.argv[1:]:
         frames, fps = load_frames(a)

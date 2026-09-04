@@ -211,3 +211,35 @@ ogni giunzione (la boucle precedente continua e si fonde nella nuova), foulard s
 **Amministrazione (V21)**: ogni salvataggio richiede il token (401 altrimenti: nulla viene scritto) e va nello **storico**
 `dance-history.json` (nome, data, matrice; `GET /api/dance-history`), da cui una vecchia matrice si riprende nell'editor e si
 risalva. «Ricarica dal server» rilegge la matrice attiva; «Valori di base» rimette il whirl ovunque senza salvare.
+
+## 8. Grammatica V22: una piroetta a ogni incrocio, nessun tempo morto
+
+Regola: **dopo ogni movimento c'è una piroetta**, e la piroetta è uno stato contato. `VALID_TRANSITIONS`:
+C → {E, A, B, K, L}; A, B, K, L → C; E → G → F → C. Al centro la piroetta è il croisement G (piroette alternate),
+seguito dal ritorno obbligatorio. Il *pivot di transizione* (rotazione fuori sequenza al cambio di senso A↔B) non può
+più verificarsi: fra due giri c'è sempre una C. `PAUSE_DURATION` = 1500 ms: **una sola rotazione** (era una doppia di
+3 s), così la danza occupa più spazio. Nessun movimento che non sia uno stato della macchina è mostrato.
+
+**Tutorial** (`TUTORIAL_PAGES`, `Game.openTutorial`): la sola ballerina (lui nascosto) esegue in loop la sequenza della
+pagina — 1) C K C L C, 2) C A C B C, 3) C E G F C K C E G F C, 4) C C C — con testo esplicativo e frecce.
+**Tre quarti di giro (M/N, V22)**: 270° in 4050 ms (stessa velocità angolare del mezzo giro), solo nei livelli Avanzato (4 tessere); ballano come A/B nella matrice; seguiti da C come ogni giro. Esempio tipico: mezzo giro avanti, piroetta, tre quarti indietro.
+**Livelli**: durata strettamente crescente 8, 11, 14 (2 tessere), 17, 20, 23 (3), 26, 29, 32 s (4).
+
+**Livelli (V22)**: 15 — Principiante I–V (2 tessere, 8→16 s), Intermedio I–III (3 tessere, 18→22 s), Avanzato I–V (4 tessere,
+24→32 s), Virtuoso I–II (4 tessere, 35 e 38 s). Musiche a rotazione. Tre quarti di giro dai livelli a 4 tessere.
+
+**Giocatori (V22)**: il nome (2–24 caratteri) identifica il giocatore; `POST /api/player/login` crea/ritrova la riga in
+`pizzica_players` (Postgres Railway di marofai.site: `key`, `name`, `level` da riprendere, `best_level`, `games`) e
+restituisce il livello da cui riprendere; ogni livello superato chiama `POST /api/player/progress` (livello successivo;
+al 15° `completed` → si riparte dal livello 1, `games`+1). Senza rete il livello resta almeno in `localStorage`.
+Sul VPS: `/etc/pizzica-game/db.env` (root:ttagent 640, le 5 variabili Postgres) caricato dal drop-in
+`pizzica-game.service.d/db.conf`; il modulo `pg` è installato in `/opt/pizzica-game/app/node_modules` (`npm install`).
+
+**Musiche (V22)**: 5 brani a rotazione sui 15 livelli (livello n → brano ((n−1) mod 5)+1): Pizzicarella 95,7 bpm,
+Pizzica Tarantata 99,4, Pizzica Salento BTQ 95,7, Tarantula Garganica «Rodianella di Carpino» 129,2 (primo battito 0,209 s),
+«Alla rodianella» 143,6 (0,302 s). Gli sprite a tempo esistono quindi in quattro versioni: `@96`, `@99`, `@129`, `@144`
+(4 battiti = 62 / 61 / 46 / 42 immagini). Menu e tutorial hanno la **musica di accoglienza** (Officina Zoè, «Santu Paulu II»),
+avviata al primo gesto dell'utente e fermata da `playLevelMusic` all'inizio del livello.
+
+**Amministrazione giocatori (V22)**: `GET /api/players` (token) → nome, livello da riprendere, record, percorsi completi,
+prima/ultima partita; sezione «Giocatori e progresso» in `admin.html` (dentro «Amministrazione giochi» su marofai.site).
