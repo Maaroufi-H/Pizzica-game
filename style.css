@@ -1613,3 +1613,10 @@ button:disabled {
 #player-name:focus { border-color: #00ffcc; box-shadow: 0 0 10px rgba(0, 255, 204, 0.4); }
 #player-info { color: #00ffcc; font-size: 0.75rem; max-width: 320px; text-align: center; min-height: 1.1em; }
 #btn-play:disabled { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.6); }
+
+/* V22: invito ad attivare il suono (i browser vietano l'audio prima del primo gesto) */
+#home-sound-hint {
+    background: rgba(255, 215, 0, 0.14); border: 1px solid #ffd700; color: #ffd700; border-radius: 20px;
+    padding: 5px 14px; font-size: 0.8rem; letter-spacing: 1px; margin: 6px auto 2px; animation: hintPulse 1.6s ease-in-out infinite;
+}
+@keyframes hintPulse { 0%, 100% { opacity: 0.65; } 50% { opacity: 1; } }

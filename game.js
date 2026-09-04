@@ -981,9 +981,18 @@ class PizzicaGame {
         // V22: musica di accoglienza (menu, tutorial, nome): parte al primo gesto
         // dell'utente (i browser bloccano l'audio automatico) e finisce quando inizia il livello.
         this.homeMusic = document.getElementById('audio-home');
+        this.homeHint = document.getElementById('home-sound-hint');
+        // I browser vietano il SUONO prima del primo gesto dell'utente: la musica parte
+        // subito ma MUTA (sempre permesso), e al primo tocco/tasto viene semplicemente
+        // smutata: cosi' e' gia' in corso quando il giocatore la sente.
+        this.homeMusic.muted = true;
+        this.homeMusic.addEventListener('playing', () => { if (!this.homeMusic.muted) this.homeHint.style.display = 'none'; });
+        this.homeMusic.addEventListener('volumechange', () => { if (!this.homeMusic.muted && !this.homeMusic.paused) this.homeHint.style.display = 'none'; });
         const tryHome = () => this.playHomeMusic();
         tryHome();
-        ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, tryHome, { passive: true }));
+        const unmute = () => { if (this.homeMusic.muted) { this.homeMusic.muted = false; } this.playHomeMusic(); };
+        ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(ev => document.addEventListener(ev, unmute, { passive: true }));
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) tryHome(); });
         // V22: tutorial con la sola ballerina
         this.tutorialScreen = document.getElementById('tutorial-screen');
         this.tutorialPage = 0; this.tutorialCouple = null; this.tutorialOpen = false;
@@ -1081,7 +1090,7 @@ class PizzicaGame {
         if (!this.homeMusic || this.isPlaying || this.gameScreen.style.display === 'flex') return;
         if (!this.homeMusic.paused) return;
         this.homeMusic.volume = 0.8;
-        this.homeMusic.play().catch(() => {});
+        this.homeMusic.play().catch(() => { /* prima del primo gesto: si riprova al tocco */ });
     }
 
     stopHomeMusic() {
