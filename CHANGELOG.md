@@ -23,5 +23,6 @@ La radice del sito reindirizza alla versione corrente.
 | V15 | `v15-fiaccole` | 03/09/2026 | Fiaccole di fuoco dietro il pubblico (eterogenee), pubblico più vivo, vere mani con dita. |
 | V16 | `v16-mocap` | 04/09/2026 | **Danza da vera motion capture** (CMU Mocap, BVH): parse + cinematica diretta, vista frontale stabile, ricerca automatica di un loop di 1,6 s, rendering nello stile del gioco. |
 | V17 | `v17-coreografie` | 04/09/2026 | **Coreografie variabili**: più danze mocap per ballerino, una per fascia di livello, con riprese delle danze precedenti per 5–10 s; cambio ogni 5–10 s, identico su tutti i riquadri. Documentazione (`CHANGELOG.md`, `docs/DANZA.md`). |
+| V18 | `v18-quarti` | 04/09/2026 | Variazione della danza a **tutti** i livelli (anche Principiante), 4ª danza per il ballerino (salsa 60_01); **quarti di giro** K/L nella macchina a stati → avvicinamento/ritorno anche in **orizzontale**; meno fiaccole, tutte dietro il pubblico e mai a contatto con esso; mani del pubblico triangolari. |
 
 Dettagli tecnici sulla danza: vedi [`docs/DANZA.md`](docs/DANZA.md).

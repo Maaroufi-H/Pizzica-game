@@ -27,9 +27,10 @@ dal posizionamento geometrico al rendering degli sprite, fino alla pipeline di m
 | E / F | traslazione radiale (avvicinamento / ritorno) | passo (`translating`), **nessuna rotazione** |
 | A / B | mezzo cerchio orario / antiorario | `rotating` = un giro su se stessi calato sulla durata (`--spin-dur`), scia di stelle (`startTrail`) |
 | G | incrocio al centro | piroette alternate (`cross-spinning` + `dance-step`), stelle |
+| K / L | **quarto di giro** orario / antiorario (V18, `QUARTER_DURATION = 1700 ms`) | come A/B: giro su se stessi + scia; dopo un quarto i danzatori sono sulla linea **orizzontale**, quindi E/F avvengono in orizzontale |
 
 * **V6** — regola: *sul cerchio girano sempre su se stessi, sulle linee no*.
-* **V11** — `CIRCLE_DURATION = 2700 ms`; al cambio di senso A↔B **pivot di transizione** di 700 ms
+* **V11** — `CIRCLE_DURATION = 2700 ms`; al cambio di senso (A↔B, K↔L, A↔L…, tramite `spinDir()`) **pivot di transizione** di 700 ms
   (`turn-settle`, rotazione standard senza stelle, non è uno stato: `sequenceDurationMs()` lo conta
   ma il giocatore non lo conteggia).
 * **V12** — le rotazioni su se stessi non usano più `rotateY` (lo sprite piatto sparisce a 90°) ma uno
@@ -99,4 +100,6 @@ Obiettivo: il giocatore non deve vedere sempre la stessa danza. Base preservata,
 * Ballerina: variante 0 = emoji Noto (base preservata), varianti 1–3 = danze mocap (*whirl* 55_01 —
   le stesse rotazioni su se stessa del ballerino —, *salsa* 61_02, *charleston* 93_04) rese con la
   stessa pipeline ma con il **modello femminile** (abito rosso svasato, capelli lunghi, tacchi, fiore).
-* Ballerino: variante 0 = *whirl*, 1 = *salsa*, 2 = *charleston*.
+* Ballerino: variante 0 = *whirl*, 1 = *salsa* 61_02, 2 = *charleston*, 3 = *salsa* 60_01.
+* **V18** — piani per fascia `CHOREO.tiers`: Principiante `[base, variazione]`, Intermedio `[propria, base, …]`,
+  Avanzato `[propria, tutte le precedenti]`; danza propria 5–8 s, riprese 4–6,5 s: la danza cambia **a ogni livello**.

@@ -20,6 +20,8 @@ const CONFIG = {
     MOVE_DURATION: 2250,
     // V16: le demi-cercle est legerement plus lent que les translations
     CIRCLE_DURATION: 2700,
+    // V23: quart de tour sur le cercle
+    QUARTER_DURATION: 1700,
     // V16: quand le sens de rotation s'inverse (A->B ou B->A), pivot fluide
     // de transition SANS etoiles - ce n'est PAS un etat de la sequence
     TURN_TRANSITION: 700,
@@ -90,17 +92,22 @@ const CHOREO = {
     man: [
         { id: 'm9',  img: 'm9.webp',  name: 'whirl (CMU 55_01)' },
         { id: 'm10', img: 'm10.webp', name: 'salsa (CMU 61_02)' },
-        { id: 'm11', img: 'm11.webp', name: 'charleston (CMU 93_05)' }
+        { id: 'm11', img: 'm11.webp', name: 'charleston (CMU 93_05)' },
+        { id: 'm12', img: 'm12.webp', name: 'salsa (CMU 60_01)' }
     ],
     woman: [
-        { id: 'w3', img: 'w3.webp', name: 'base (Noto 💃)' },
+        { id: 'w3', img: 'w3.webp', name: 'base (Noto)' },
         { id: 'w4', img: 'w4.webp', name: 'whirl (CMU 55_01)' },
         { id: 'w5', img: 'w5.webp', name: 'salsa (CMU 61_02)' },
         { id: 'w6', img: 'w6.webp', name: 'charleston (CMU 93_04)' }
     ],
-    // palier (0 principiante, 1 intermedio, 2 avanzato) -> variante propre
-    tierVariant: { man: [0, 1, 2], woman: [0, 1, 2] },
-    // couple homme/femme: la femme reprend en plus la variante 3 au palier 2
+    // par palier: [danse propre, ...danses reprises pendant 4-6 s]
+    // V23: meme au premier palier il y a une variation (l'owner ne voyait
+    // aucun changement au niveau 1)
+    tiers: {
+        man:   [[0, 3], [1, 0, 3], [2, 0, 1, 3]],
+        woman: [[0, 1], [2, 0, 1], [3, 0, 1, 2]]
+    },
     startedAt: 0
 };
 
@@ -122,21 +129,16 @@ function seeded(seed) {
  */
 function choreoPlan(role, level) {
     const tier = tierOf(level);
-    const own = CHOREO.tierVariant[role][tier];
-    const prevs = [];
-    for (let t = 0; t < tier; t++) prevs.push(CHOREO.tierVariant[role][t]);
-    if (role === 'woman' && tier === 2) prevs.push(3);
+    const [own, ...prevs] = CHOREO.tiers[role][tier];
     const rnd = seeded(level * 37 + (role === 'man' ? 11 : 23));
     const plan = [];
     let total = 0;
     while (total < 120000) {                       // 2 minutes de plan, en boucle ensuite
-        const ownMs = 6000 + Math.round(rnd() * 4000);
+        const ownMs = 5000 + Math.round(rnd() * 3000);        // 5-8 s de danse propre
         plan.push({ v: own, ms: ownMs }); total += ownMs;
-        if (prevs.length) {
-            const pv = prevs[Math.floor(rnd() * prevs.length)];
-            const pms = 5000 + Math.round(rnd() * 3000);
-            plan.push({ v: pv, ms: pms }); total += pms;
-        }
+        const pv = prevs[Math.floor(rnd() * prevs.length)];
+        const pms = 4000 + Math.round(rnd() * 2500);          // 4-6.5 s de reprise
+        plan.push({ v: pv, ms: pms }); total += pms;
     }
     return plan;
 }
@@ -172,8 +174,20 @@ const STATE = {
     // repart de l'autre cote" (ancien etat H) est SUPPRIMEE, ainsi que les
     // sorties perpendiculaires P/Q: apres un croisement le retour en arriere
     // est OBLIGATOIRE (chacun repart d'ou il est venu).
-    G: 'CROSS_SPIN_ALTERNATE'
+    G: 'CROSS_SPIN_ALTERNATE',
+    // V23: QUARTS de tour sur le cercle (horaire / antihoraire). Apres un quart
+    // de tour les danseurs sont sur la ligne HORIZONTALE: le rapprochement (E)
+    // et le retour (F) se font alors horizontalement.
+    K: 'QUARTER_CW',
+    L: 'QUARTER_CCW'
 };
+
+// sens de rotation d'un etat circulaire (+1 horaire, -1 antihoraire, 0 sinon)
+function spinDir(st) {
+    if (st === STATE.A || st === STATE.K) return 1;
+    if (st === STATE.B || st === STATE.L) return -1;
+    return 0;
+}
 
 // V8: etat de croisement (au centre, avec etoiles scintillantes)
 function isCrossState(s) {
@@ -188,13 +202,15 @@ function isCrossState(s) {
 // le retour en arriere (F): chaque danseur repart dans le sens oppose a celui
 // de son arrivee, jamais tout droit et jamais en perpendiculaire.
 const VALID_TRANSITIONS = {
-    [STATE.C]: [STATE.E, STATE.A, STATE.B],
+    [STATE.C]: [STATE.E, STATE.A, STATE.B, STATE.K, STATE.L],
     [STATE.E]: [STATE.G],
     [STATE.G]: [STATE.F],
     [STATE.D]: [STATE.F],
     [STATE.F]: [STATE.C],
     [STATE.A]: [STATE.B, STATE.C],
-    [STATE.B]: [STATE.A, STATE.C]
+    [STATE.B]: [STATE.A, STATE.C],
+    [STATE.K]: [STATE.C, STATE.L],
+    [STATE.L]: [STATE.C, STATE.K]
 };
 
 const STATE_DURATION = {
@@ -204,6 +220,8 @@ const STATE_DURATION = {
     [STATE.F]: CONFIG.MOVE_DURATION,
     [STATE.A]: CONFIG.CIRCLE_DURATION,
     [STATE.B]: CONFIG.CIRCLE_DURATION,
+    [STATE.K]: CONFIG.QUARTER_DURATION,
+    [STATE.L]: CONFIG.QUARTER_DURATION,
     [STATE.G]: CONFIG.CROSS_SPIN_DURATION * 2
 };
 
@@ -226,9 +244,9 @@ function sequenceDurationMs(sequence) {
         if (st === STATE.C) d = CONFIG.PAUSE_DURATION;   // piroette lente sur toute la duree de la pause
         else if (st === STATE.D) d = CONFIG.PAUSE_DURATION;
         else if (st === STATE.G) d = CONFIG.CROSS_SPIN_DURATION * 2;
-        else if (st === STATE.A || st === STATE.B) {
-            d = CONFIG.CIRCLE_DURATION;
-            if ((prev === STATE.A || prev === STATE.B) && prev !== st) d += CONFIG.TURN_TRANSITION;
+        else if (spinDir(st) !== 0) {
+            d = (st === STATE.A || st === STATE.B) ? CONFIG.CIRCLE_DURATION : CONFIG.QUARTER_DURATION;
+            if (spinDir(prev) === -spinDir(st)) d += CONFIG.TURN_TRANSITION;
         }
         total += d;
         prev = st;
@@ -430,15 +448,20 @@ class Couple {
      * facon heterogene (angles irreguliers, un peu au-dela de l'anneau).
      */
     updateTorches(w, h, cx, cy, rx, ry, spSize) {
-        // angles ENTRE les spectateurs (i + 0.5), choix irregulier
-        const slots = [0, 2, 3, 6, 8, 11, 13, 14];
+        // moins de flambeaux, TOUS derriere le public et jamais colles a lui
+        const slots = [1, 4, 7, 9, 12, 15];
         const n = 16;
         const tsize = Math.max(12, Math.round(spSize * 0.7));
         const existing = this.container.querySelectorAll(':scope > .torch');
         const need = existing.length !== slots.length;
         if (need) existing.forEach(e => e.remove());
         const wheel = this.container.querySelector(':scope > .couple-wheel');
-        const fits = (x, y) => x - tsize * 0.6 >= 0 && x + tsize * 0.6 <= w && y - tsize * 1.15 >= 0 && y + tsize * 0.5 <= h;
+        const spect = [...this.container.querySelectorAll(':scope > .spectator')]
+            .filter(e => e.style.display !== 'none')
+            .map(e => [parseFloat(e.style.left), parseFloat(e.style.top)]);
+        const minDist = (spSize + tsize) * 0.5;      // jamais colle a un spectateur
+        const fits = (x, y) => x - tsize * 0.6 >= 0 && x + tsize * 0.6 <= w && y - tsize * 1.15 >= 0 && y + tsize * 0.5 <= h
+            && spect.every(([sx, sy]) => Math.hypot(sx - x, sy - y) >= minDist);
         slots.forEach((si, i) => {
             const a = ((si + 0.5) / n) * Math.PI * 2 + 0.10 * Math.sin(i * 3.1);
             let el = need ? null : existing[i];
@@ -452,16 +475,12 @@ class Couple {
                 el.appendChild(fl);
                 if (wheel) this.container.insertBefore(el, wheel); else this.container.appendChild(el);
             }
-            // derriere le public si la place existe, sinon a cote (sur l'anneau)
             let placed = false;
-            for (const k of [1.18 + 0.05 * (i % 2), 1.06, 0.96]) {
+            for (const k of [1.30, 1.20, 1.10, 1.0]) {        // derriere si possible, sinon dans un creux de l'anneau
                 const x = cx + rx * k * Math.sin(a);
                 const y = cy - ry * k * Math.cos(a);
                 if (fits(x, y)) {
-                    el.style.left = x + 'px';
-                    el.style.top = y + 'px';
-                    placed = true;
-                    break;
+                    el.style.left = x + 'px'; el.style.top = y + 'px'; placed = true; break;
                 }
             }
             el.style.setProperty('--t-size', tsize + 'px');
@@ -571,19 +590,23 @@ class Couple {
                 break;
 
             case STATE.A:
-            case STATE.B: {
-                const dir = (newState === STATE.A) ? 1 : -1;
-                const reversing = (prevState === STATE.A || prevState === STATE.B) && prevState !== newState;
-                moveMs = CONFIG.CIRCLE_DURATION;
-                duration = CONFIG.CIRCLE_DURATION;
+            case STATE.B:
+            case STATE.K:
+            case STATE.L: {
+                const dir = spinDir(newState);
+                const half = (newState === STATE.A || newState === STATE.B);
+                const arcMs = half ? CONFIG.CIRCLE_DURATION : CONFIG.QUARTER_DURATION;
+                const reversing = spinDir(prevState) === -dir;
+                moveMs = arcMs;
+                duration = arcMs;
                 const go = () => {
-                    this.wheelAngle += dir * 180;
+                    this.wheelAngle += dir * (half ? 180 : 90);
                     this.clearAnimationClasses();
-                    this.setSpinDuration(CONFIG.CIRCLE_DURATION);
+                    this.setSpinDuration(arcMs);
                     this.setAnimationClass('rotating');
                     // V15: trainee d'etoiles derriere les danseurs sur le cercle
-                    this.startTrail(CONFIG.CIRCLE_DURATION);
-                    this.applyPosition(false, CONFIG.CIRCLE_DURATION);
+                    this.startTrail(arcMs);
+                    this.applyPosition(false, arcMs);
                 };
                 if (reversing) {
                     // V16: on ne repart pas brusquement en sens inverse - les
@@ -2036,6 +2059,8 @@ class PizzicaGame {
             [STATE.E]: 'Traslazione avanti',
             [STATE.F]: 'Traslazione indietro',
             [STATE.G]: 'Incrocio: giri alternati ✦',
+            [STATE.K]: 'Quarto di giro (orario)',
+            [STATE.L]: 'Quarto di giro (antiorario)',
             [STATE.G]: 'Incrocio: giri alternati ✦'
         };
         return names[state] || 'Sconosciuto';
