@@ -551,7 +551,19 @@ button:disabled {
     height: 100%;
     object-fit: contain;
     transform-origin: center bottom;
+    transition: opacity 700ms ease-in-out;
 }
+
+/* V20: fondu enchaine entre deux danses — le fantome de l'ancien mouvement
+   s'estompe pendant que le nouveau apparait (memes animations, meme phase) */
+.dancer.appearing { opacity: 0; transition: none; }
+.dancer-ghost {
+    position: absolute;
+    left: 0; top: 0;
+    pointer-events: none;
+    opacity: 1;
+}
+.dancer-ghost.fading { opacity: 0; }
 
 /* ============================================
    V6 PRO - ANIMATIONS DYNAMIQUES DES DANSEURS

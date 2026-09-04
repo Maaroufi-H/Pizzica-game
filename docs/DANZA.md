@@ -145,3 +145,13 @@ Stesso filtro per la salsa d (60_01): la vecchia boucle conteneva mezzo giro (16
 **Foulard della pizzica (V20)**: non più un fazzolettino statico ma un **foulard lungo** (36 % dell'altezza), bianco con
 bordo rosso, tenuto nella mano più alta. È dinamico: la sua direzione è la somma della gravità e dell'opposto della velocità
 della mano (calcolata sulle immagini vicine della capture), e ondeggia con due onde per ciclo, così il loop resta continuo.
+
+**Charleston c (V20)**: stesso filtro `--maxyaw 50` e velocità ×0,6 (`--nout 64`).
+
+**Transizione fluida fra le danze (V20)**: ogni cambio di sprite in `Couple.applyDance` è un **fondu enchaîné** di
+`CONFIG.DANCE_FADE` = 700 ms: l'immagine del movimento precedente resta come *fantasma* (`img.dancer-ghost`, stesse
+animazioni CSS e stessa fase perché le classi di animazione sono appena state azzerate) e la sua opacità scende a 0
+mentre quella del nuovo movimento sale da 0 a 1. Il fantasma è poi rimosso. Identico nelle quattro tessere.
+
+**Cache**: gli sprite hanno `Cache-Control: max-age=86400`; quando un movimento cambia, il file prende un **nuovo nome**
+(`m10b.webp`…) altrimenti i browser mostrano per 24 h la vecchia animazione.

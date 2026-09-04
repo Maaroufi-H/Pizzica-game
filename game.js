@@ -25,6 +25,7 @@ const CONFIG = {
     // V16: quand le sens de rotation s'inverse (A->B ou B->A), pivot fluide
     // de transition SANS etoiles - ce n'est PAS un etat de la sequence
     TURN_TRANSITION: 700,
+    DANCE_FADE: 700,            // V20: duree du fondu enchaine entre deux danses
     // V10: la rotation magique est TRES LENTE et fait UN SEUL tour complet
     // pendant toute la duree de l'etat — le joueur compte 1 unite, sans
     // ambiguite (avant: pirouette 1s en boucle infinie, impossible a compter)
@@ -88,16 +89,16 @@ function getChar(role) {
 const MOVES = {
     man: [
         { id: 'm9',  img: 'm9.webp',  name: 'a — whirl (CMU 55_01)' },
-        { id: 'm10', img: 'm10.webp', name: 'b — salsa lenta (CMU 61_02, x0.4)' },
-        { id: 'm11', img: 'm11.webp', name: 'c — charleston (CMU 93_05)' },
-        { id: 'm12', img: 'm12.webp', name: 'd — salsa (CMU 60_01)' },
+        { id: 'm10', img: 'm10b.webp', name: 'b — salsa lenta (CMU 61_02, ×0,5)' },
+        { id: 'm11', img: 'm11b.webp', name: 'c — charleston lento (CMU 93_05, ×0,6)' },
+        { id: 'm12', img: 'm12b.webp', name: 'd — salsa (CMU 60_01)' },
         { id: 'm13', img: 'm13.webp', name: 'e — PIZZICA (saltelli CMU 49_02 + braccia alte CMU 55_01)' }
     ],
     woman: [
         { id: 'w4', img: 'w4.webp', name: 'a — whirl (CMU 55_01)' },
-        { id: 'w5', img: 'w5.webp', name: 'b — salsa lenta (CMU 61_02, x0.4)' },
-        { id: 'w6', img: 'w6.webp', name: 'c — charleston (CMU 93_04)' },
-        { id: 'w7', img: 'w7.webp', name: 'e — PIZZICA col fazzoletto (saltelli 49_02 + braccia alte 55_01)' }
+        { id: 'w5', img: 'w5b.webp', name: 'b — salsa lenta (CMU 61_02, ×0,5)' },
+        { id: 'w6', img: 'w6b.webp', name: 'c — charleston lento (CMU 93_04, ×0,6)' },
+        { id: 'w7', img: 'w7b.webp', name: 'e — PIZZICA col fazzoletto (saltelli 49_02 + braccia alte 55_01)' }
     ]
 };
 const DANCE_KEYS = ['REST', 'E_V', 'F_V', 'E_H', 'F_H', 'A', 'B', 'K', 'L', 'G', 'PIVOT', 'IDLE'];
@@ -287,13 +288,29 @@ class Couple {
     }
 
     // V24: le mouvement de danse depend de l'ETAT (matrice administrable)
+    // V20: le changement de danse est un FONDU ENCHAINE (jamais de coupure brusque):
+    // l'ancien mouvement reste affiche en fantome et s'estompe pendant que le
+    // nouveau apparait. Identique dans les 4 tuiles (meme instant, meme duree).
     applyDance(key) {
         [['man', this.manWrapper], ['woman', this.womanWrapper]].forEach(([role, w]) => {
             if (!w) return;
-            const img = w.querySelector('img.dancer');
+            const img = w.querySelector('img.dancer:not(.dancer-ghost)');
             if (!img) return;
             const src = moveImg(role, key);
-            if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+            if (img.getAttribute('src') === src) return;
+            w.querySelectorAll('img.dancer-ghost').forEach(g => g.remove());
+            const ghost = img.cloneNode(false);
+            ghost.classList.add('dancer-ghost');
+            ghost.alt = '';
+            w.appendChild(ghost);
+            img.classList.add('appearing');
+            img.setAttribute('src', src);
+            // deux frames plus tard: les deux opacites glissent en sens inverse
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                ghost.classList.add('fading');
+                img.classList.remove('appearing');
+            }));
+            setTimeout(() => ghost.remove(), CONFIG.DANCE_FADE + 150);
         });
     }
 
