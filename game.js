@@ -88,14 +88,16 @@ function getChar(role) {
 const MOVES = {
     man: [
         { id: 'm9',  img: 'm9.webp',  name: 'a — whirl (CMU 55_01)' },
-        { id: 'm10', img: 'm10.webp', name: 'b — salsa (CMU 61_02)' },
+        { id: 'm10', img: 'm10.webp', name: 'b — salsa lenta (CMU 61_02, x0.4)' },
         { id: 'm11', img: 'm11.webp', name: 'c — charleston (CMU 93_05)' },
-        { id: 'm12', img: 'm12.webp', name: 'd — salsa (CMU 60_01)' }
+        { id: 'm12', img: 'm12.webp', name: 'd — salsa (CMU 60_01)' },
+        { id: 'm13', img: 'm13.webp', name: 'e — PIZZICA (saltelli CMU 49_02 + braccia alte CMU 55_01)' }
     ],
     woman: [
         { id: 'w4', img: 'w4.webp', name: 'a — whirl (CMU 55_01)' },
-        { id: 'w5', img: 'w5.webp', name: 'b — salsa (CMU 61_02)' },
-        { id: 'w6', img: 'w6.webp', name: 'c — charleston (CMU 93_04)' }
+        { id: 'w5', img: 'w5.webp', name: 'b — salsa lenta (CMU 61_02, x0.4)' },
+        { id: 'w6', img: 'w6.webp', name: 'c — charleston (CMU 93_04)' },
+        { id: 'w7', img: 'w7.webp', name: 'e — PIZZICA col fazzoletto (saltelli 49_02 + braccia alte 55_01)' }
     ]
 };
 const DANCE_KEYS = ['REST', 'E_V', 'F_V', 'E_H', 'F_H', 'A', 'B', 'K', 'L', 'G', 'PIVOT', 'IDLE'];

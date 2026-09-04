@@ -114,3 +114,26 @@ La matrice è caricata da `/dance-config.json` (radice del sito, `no-store`) e a
 (token → `POST /api/dance-config`, validazione delle chiavi/valori lato server). Movimenti disponibili:
 lui `m9` whirl, `m10` salsa 61_02, `m11` charleston, `m12` salsa 60_01; lei `w4` whirl, `w5` salsa,
 `w6` charleston (tutti da vera motion capture, stesso modello disegnato).
+
+## 6. La pizzica (V20) — che cos'è, come si muove, come l'abbiamo costruita
+
+**Cosa dicono le fonti** (tradizione salentina, «pizzica pizzica» / ronda):
+* **Piedi**: passo base *saltellato* sul tempo del tamburello (2/4 veloce, 120–140 bpm): il peso passa da un
+  piede all'altro con piccoli **saltelli** e battute di punta/tallone, piedi vicini al suolo, ginocchia elastiche;
+  frequenti **giri su se stessi** e cambi di fronte.
+* **Braccia**: **aperte e alte**, spesso sopra la spalla, polsi che ruotano; l'uomo tiene le braccia larghe (a volte
+  batte le mani o le porta ai fianchi), la donna tiene e fa ondeggiare il **fazzoletto** con una mano,
+  con l'altra solleva o accompagna la gonna.
+* **Coppia**: non si tocca mai; si avvicina e si allontana (il *corteggiamento*), gira attorno all'altro nella
+  *ronda* formata dal pubblico che batte le mani — esattamente la struttura del gioco (cerchio, avvicinamenti,
+  incroci, pubblico che applaude).
+
+**Come l'abbiamo realizzata restando su movimenti umani reali**: la base CMU non contiene pizzica. Abbiamo quindi
+**composto** due catture reali (`bvh_dancer.py --upper`): il **bacino e le gambe** vengono da 49_02
+(*jump up and down, hop on one foot* — i saltelli), il **busto e le braccia** da 55_01 (*dance, whirl* — braccia
+alte e giri su se stessi), riscalate all'altezza del clip delle gambe; la testa segue il rimbalzo del bacino.
+Per la ballerina si aggiunge il **fazzoletto** bianco nella mano più alta (`--hanky`). Sprite: `m13` / `w7`.
+Il tempo del loop resta 1,6 s (≈ 2 saltelli per ciclo).
+
+**Salsa b rallentata (V20)**: lo stesso loop reale di 61_02 è ricampionato su 96 immagini a 25 img/s
+(`--nout 96`), cioè ×0,4 della velocità reale: i passi restano leggibili.
