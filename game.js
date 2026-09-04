@@ -69,7 +69,7 @@ function tilesForLevel(level) {
 // emoji 💃 anime. Meme hauteur, pieds au bord bas de la boite.
 // ============================================
 const CHARACTERS = {
-    man: [{ id: 'm8', img: 'm8.webp', name: 'Ballerino di pizzica' }],
+    man: [{ id: 'm9', img: 'm9.webp', name: 'Ballerino di pizzica' }],
     woman: [{ id: 'w3', img: 'w3.webp', name: 'Ballerina' }]
 };
 
