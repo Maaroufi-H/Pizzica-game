@@ -164,3 +164,46 @@ mentre quella del nuovo movimento sale da 0 a 1. Il fantasma è poi rimosso. Ide
 **Foulard in tutte le danze di lei (V20)**: il foulard simulato è ora presente in **ogni** movimento della ballerina
 (`--hanky` su whirl 55_01 → `w4b`, salsa 61_02 → `w5c`, charleston 93_04 → `w6c`, pizzica → `w7c`): nel whirl fila in
 lunghe arabesche dietro la mano alta, nella salsa e nel charleston pende e ondeggia. Stessa fisica, stessi parametri.
+
+## 7. Motore di movimenti da video e sincronizzazione al tempo (V21)
+
+**Perché**: la libreria CMU non contiene pizzica. I passi reali si trovano nei tutorial video. Il motore V21
+(`video_dancer.py`) li trasforma in animazioni del gioco, senza toccare le danze precedenti.
+
+**Pipeline**
+1. *Video → posa 3D*: MediaPipe PoseLandmarker (modello *full*) su ogni immagine → 33 punti 3D (`pose_extract.py`).
+   Sorgenti: «Pizzica Pizzica Step by step Training» (un solo ballerino, camera fissa, 4 min) e «Tutorial 8 passi
+   fondamentali nella pizzica» (1 min). Il video di gruppo «10 passi» era troppo confuso (più persone, camera mobile).
+2. *Posa → scheletro del gioco*: lissage Savitzky–Golay (0,17 s), stesse chiavi dei BVH (Hips, Neck, Head, braccia,
+   gambe), orientamento fronte camera (`front_view`), scala all'altezza standard. I punti 3D di MediaPipe sono centrati
+   sul bacino: il **salto** si ricostruisce dal movimento verticale del bacino nell'*immagine* (camera fissa), convertito
+   in metri con la lunghezza del tronco.
+3. *Ciclo di passo*: autocorrelazione dell'altezza relativa dei piedi → periodo del passo (1,20 s nel training video,
+   1,40 s nel tutorial). Una boucle = 2 cicli (sinistra-destra × 2) = **4 battiti**.
+4. *Selezione dei passi*: finestre senza rotazione del corpo (> 40° escluse), buona chiusura, energia sufficiente, e
+   **distinte** fra loro per firma (altezza dei polsi, apertura e alzata dei piedi, ampiezza laterale, salto). Chiusura
+   della boucle: gli ultimi 22 % scivolano verso il periodo precedente.
+5. *Resa*: stessi renderer (`render`, `render_woman`), foulard simulato per lei (§6), normalizzazione sul corpo.
+
+**Catalogo V21** (identificativo lui / lei, sorgente, istante):
+| Passo | Lui | Lei | Sorgente | t |
+|---|---|---|---|---|
+| f — braccia al cielo | m14 | w8 | training | 131,5 s |
+| g — passo laterale | m15 | w9 | training | 90,3 s |
+| h — mani ai fianchi | m16 | w10 | training | 165,9 s |
+| i — fianchi e piede alzato | m17 | w11 | training | 45,7 s |
+| j — braccia alte, spostamento | m18 | w12 | tutorial 8 passi | 26,0 s |
+| k — saltello puntato | m19 | w13 | tutorial 8 passi | 32,9 s |
+| l — MEDLEY continuo | m20 | w14 | tutti | — |
+
+**Tempo**: il tempo di ogni musica è misurato sul file (flusso spettrale + autocorrelazione, `bpm.py`):
+Pizzicarella 95,7 bpm (primo battito a 0,255 s), Pizzica Tarantata 99,4 bpm (0,511 s), Pizzica Salento BTQ 95,7 bpm
+(0,325 s dopo il taglio dei primi 7 s). Gli sprite «a tempo» esistono in due versioni, `<id>@96.webp` (62 immagini
+a 25 img/s = 2,48 s ≈ 96,8 bpm) e `<id>@99.webp` (61 immagini = 2,44 s ≈ 98,4 bpm); `moveImg` sceglie in base alla
+musica del livello (`TEMPO[audioId]`). Il **cambio di danza avviene sul battito**: `applyDance` attende il tempo
+successivo della musica in corso (`beatDelayMs`, ≤ 0,7 s) prima di avviare il fondu, così il primo appoggio del nuovo
+passo cade sul battito.
+
+**Medley (l)**: i sei passi incatenati in un solo sprite continuo — ogni passo per 8 battiti, fondu di posa di 0,45 s ad
+ogni giunzione (la boucle precedente continua e si fonde nella nuova), foulard simulato su tutta la sequenza, loop globale
+(48 battiti ≈ 30 s, 750 / 727 immagini).

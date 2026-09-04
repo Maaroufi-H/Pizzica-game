@@ -34,7 +34,7 @@
 </head>
 <body>
     <h1>Pizzica Master — matrice dei movimenti</h1>
-    <div class="sub">Assegna a ogni <b>stato della macchina</b> il movimento di danza di lui e di lei. Le animazioni vengono da vera motion capture.</div>
+    <div class="sub">Assegna a ogni <b>stato della macchina</b> il movimento di danza di lui e di lei. Le animazioni vengono da vera motion capture (CMU) e, per i passi f–l, da <b>video reali di pizzica</b> analizzati immagine per immagine; i passi «a tempo» seguono il battito della musica del livello.</div>
 
     <div class="bar">
         <input type="password" id="token" placeholder="token amministratore">
@@ -62,13 +62,27 @@
             { id: 'm10', img: 'm10b.webp', name: 'b — salsa lenta (CMU 61_02, ×0,5)' },
             { id: 'm11', img: 'm11b.webp', name: 'c — charleston lento (CMU 93_05, ×0,6)' },
             { id: 'm12', img: 'm12b.webp', name: 'd — salsa (CMU 60_01)' },
-            { id: 'm13', img: 'm13.webp', name: 'e — PIZZICA (saltelli CMU 49_02 + braccia alte CMU 55_01)' }
+        { id: 'm13', img: 'm13.webp', name: 'e — PIZZICA (saltelli CMU 49_02 + braccia alte CMU 55_01)' },
+            { id: 'm14', tempo: true, name: 'f — pizzica: braccia al cielo (video, a tempo)' },
+            { id: 'm15', tempo: true, name: 'g — pizzica: passo laterale (video, a tempo)' },
+            { id: 'm16', tempo: true, name: 'h — pizzica: mani ai fianchi (video, a tempo)' },
+            { id: 'm17', tempo: true, name: 'i — pizzica: fianchi e piede alzato (video, a tempo)' },
+            { id: 'm18', tempo: true, name: 'j — pizzica: braccia alte, spostamento (video, a tempo)' },
+            { id: 'm19', tempo: true, name: 'k — pizzica: saltello puntato (video, a tempo)' },
+            { id: 'm20', tempo: true, name: 'l — pizzica: MEDLEY continuo dei 6 passi (48 temps)' }
         ],
         woman: [
             { id: 'w4', img: 'w4b.webp', name: 'a — whirl (giro su se stessa, CMU 55_01)' },
             { id: 'w5', img: 'w5c.webp', name: 'b — salsa lenta (CMU 61_02, ×0,5)' },
             { id: 'w6', img: 'w6c.webp', name: 'c — charleston lento (CMU 93_04, ×0,6)' },
-            { id: 'w7', img: 'w7c.webp', name: 'e — PIZZICA (saltelli 49_02 + braccia alte 55_01)' }
+        { id: 'w7', img: 'w7c.webp', name: 'e — PIZZICA (saltelli 49_02 + braccia alte 55_01)' },
+            { id: 'w8',  tempo: true, name: 'f — pizzica: braccia al cielo (video, a tempo)' },
+            { id: 'w9',  tempo: true, name: 'g — pizzica: passo laterale (video, a tempo)' },
+            { id: 'w10', tempo: true, name: 'h — pizzica: mani ai fianchi (video, a tempo)' },
+            { id: 'w11', tempo: true, name: 'i — pizzica: fianchi e piede alzato (video, a tempo)' },
+            { id: 'w12', tempo: true, name: 'j — pizzica: braccia alte, spostamento (video, a tempo)' },
+            { id: 'w13', tempo: true, name: 'k — pizzica: saltello puntato (video, a tempo)' },
+            { id: 'w14', tempo: true, name: 'l — pizzica: MEDLEY continuo dei 6 passi (48 temps)' }
         ]
     };
     const STATES = [
@@ -92,7 +106,7 @@
     const tbody = $('#matrix tbody');
     let config = JSON.parse(JSON.stringify(DEFAULTS));
 
-    function imgOf(role, id) { const m = MOVES[role].find(x => x.id === id) || MOVES[role][0]; return m.img; }
+    function imgOf(role, id) { const m = MOVES[role].find(x => x.id === id) || MOVES[role][0]; return m.tempo ? `${m.id}@96.webp` : m.img; }
     function render() {
         tbody.innerHTML = '';
         STATES.forEach(([key, label, hint]) => {
@@ -111,7 +125,7 @@
             $('#btn-save').disabled = !$('#token').value;
         }));
         $('#cards').innerHTML = ['man', 'woman'].map(role => MOVES[role].map(m =>
-            `<div class="card"><img src="${m.img}" alt=""><b>${role === 'man' ? 'Lui' : 'Lei'}</b>${m.name}</div>`).join('')).join('');
+            `<div class="card"><img src="${imgOf(role, m.id)}" alt=""><b>${role === 'man' ? 'Lui' : 'Lei'}</b>${m.name}</div>`).join('')).join('');
     }
     function say(t) { $('#msg').textContent = t; }
 

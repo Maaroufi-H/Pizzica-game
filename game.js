@@ -92,23 +92,60 @@ const MOVES = {
         { id: 'm10', img: 'm10b.webp', name: 'b — salsa lenta (CMU 61_02, ×0,5)' },
         { id: 'm11', img: 'm11b.webp', name: 'c — charleston lento (CMU 93_05, ×0,6)' },
         { id: 'm12', img: 'm12b.webp', name: 'd — salsa (CMU 60_01)' },
-        { id: 'm13', img: 'm13.webp', name: 'e — PIZZICA (saltelli CMU 49_02 + braccia alte CMU 55_01)' }
+        { id: 'm13', img: 'm13.webp', name: 'e — PIZZICA (saltelli CMU 49_02 + braccia alte CMU 55_01)' },
+        { id: 'm14', tempo: true, name: 'f — pizzica: braccia al cielo (video, a tempo)' },
+        { id: 'm15', tempo: true, name: 'g — pizzica: passo laterale (video, a tempo)' },
+        { id: 'm16', tempo: true, name: 'h — pizzica: mani ai fianchi (video, a tempo)' },
+        { id: 'm17', tempo: true, name: 'i — pizzica: fianchi e piede alzato (video, a tempo)' },
+        { id: 'm18', tempo: true, name: 'j — pizzica: braccia alte, spostamento (video, a tempo)' },
+        { id: 'm19', tempo: true, name: 'k — pizzica: saltello puntato (video, a tempo)' },
+        { id: 'm20', tempo: true, name: 'l — pizzica: MEDLEY continuo dei 6 passi (48 temps)' }
     ],
     woman: [
         { id: 'w4', img: 'w4b.webp', name: 'a — whirl (CMU 55_01)' },
         { id: 'w5', img: 'w5c.webp', name: 'b — salsa lenta (CMU 61_02, ×0,5)' },
         { id: 'w6', img: 'w6c.webp', name: 'c — charleston lento (CMU 93_04, ×0,6)' },
-        { id: 'w7', img: 'w7c.webp', name: 'e — PIZZICA (saltelli 49_02 + braccia alte 55_01)' }
+        { id: 'w7', img: 'w7c.webp', name: 'e — PIZZICA (saltelli 49_02 + braccia alte 55_01)' },
+        { id: 'w8',  tempo: true, name: 'f — pizzica: braccia al cielo (video, a tempo)' },
+        { id: 'w9',  tempo: true, name: 'g — pizzica: passo laterale (video, a tempo)' },
+        { id: 'w10', tempo: true, name: 'h — pizzica: mani ai fianchi (video, a tempo)' },
+        { id: 'w11', tempo: true, name: 'i — pizzica: fianchi e piede alzato (video, a tempo)' },
+        { id: 'w12', tempo: true, name: 'j — pizzica: braccia alte, spostamento (video, a tempo)' },
+        { id: 'w13', tempo: true, name: 'k — pizzica: saltello puntato (video, a tempo)' },
+        { id: 'w14', tempo: true, name: 'l — pizzica: MEDLEY continuo dei 6 passi (48 temps)' }
     ]
 };
 const DANCE_KEYS = ['REST', 'E_V', 'F_V', 'E_H', 'F_H', 'A', 'B', 'K', 'L', 'G', 'PIVOT', 'IDLE'];
 const DANCE_MAP = { man: {}, woman: {} };
 DANCE_KEYS.forEach(k => { DANCE_MAP.man[k] = 'm9'; DANCE_MAP.woman[k] = 'w4'; });
 
-function moveImg(role, key) {
+// V21: tempo reale di ogni musica (misurato sul file audio) -> gli sprite "a tempo" esistono in
+// due versioni, <id>@96.webp e <id>@99.webp (4 temps = 62 / 61 immagini a 25 img/s), e il cambio di
+// danza viene fatto sul TEMPO successivo della musica in corso (beatDelayMs).
+const TEMPO = {
+    'audio-level-1': { bpm: 95.7, tag: 96, offset: 0.255 },   // Pizzicarella
+    'audio-level-2': { bpm: 99.4, tag: 99, offset: 0.511 },   // Beppe Junior - Pizzica Tarantata
+    'audio-level-3': { bpm: 95.7, tag: 96, offset: 0.325 }    // Pizzica Salento BTQ (dal secondo 7)
+};
+function currentTempo() {
+    const g = window.game; const lv = g && LEVELS[g.currentLevel];
+    return (lv && TEMPO[lv.audioId]) || TEMPO['audio-level-1'];
+}
+function beatDelayMs() {
+    const g = window.game; const lv = g && LEVELS[g.currentLevel]; const t = lv && TEMPO[lv.audioId];
+    const audio = lv && document.getElementById(lv.audioId);
+    if (!t || !audio || audio.paused || !isFinite(audio.currentTime)) return 0;
+    const beat = 60 / t.bpm; const pos = audio.currentTime - t.offset;
+    const d = (Math.ceil(pos / beat) * beat - pos) * 1000;
+    return d < 30 ? 0 : Math.min(d, 700);
+}
+function moveOf(role, key) {
     const id = DANCE_MAP[role][key];
-    const m = MOVES[role].find(x => x.id === id) || MOVES[role][0];
-    return m.img;
+    return MOVES[role].find(x => x.id === id) || MOVES[role][0];
+}
+function moveImg(role, key) {
+    const m = moveOf(role, key);
+    return m.tempo ? `${m.id}@${currentTempo().tag}.webp` : m.img;
 }
 
 // charge la matrice administree (racine du site, partagee par les versions)
@@ -292,6 +329,18 @@ class Couple {
     // l'ancien mouvement reste affiche en fantome et s'estompe pendant que le
     // nouveau apparait. Identique dans les 4 tuiles (meme instant, meme duree).
     applyDance(key) {
+        if (this.danceSwapTimer) { clearTimeout(this.danceSwapTimer); this.danceSwapTimer = null; }
+        const tempoMove = moveOf('man', key).tempo || moveOf('woman', key).tempo;
+        const delay = tempoMove ? beatDelayMs() : 0;
+        if (delay > 0) {
+            // V21: si parte sul battito: il fondu comincia sul tempo successivo della musica
+            this.danceSwapTimer = setTimeout(() => { this.danceSwapTimer = null; this.applyDanceNow(key); }, delay);
+            return;
+        }
+        this.applyDanceNow(key);
+    }
+
+    applyDanceNow(key) {
         [['man', this.manWrapper], ['woman', this.womanWrapper]].forEach(([role, w]) => {
             if (!w) return;
             const img = w.querySelector('img.dancer:not(.dancer-ghost)');
