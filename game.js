@@ -1071,7 +1071,10 @@ class PizzicaGame {
         const end = performance.now() + durationMs;
         const tick = () => {
             const left = Math.max(0, Math.ceil((end - performance.now()) / 1000));
-            this.demoTimer.textContent = left;
+            if (String(left) !== this.demoTimer.textContent) {
+                this.demoTimer.textContent = left;
+                this.demoTimer.classList.remove('pop'); void this.demoTimer.offsetWidth; this.demoTimer.classList.add('pop');
+            }
             if (left <= 0) {
                 clearInterval(this.demoTimerInterval);
                 this.demoTimerInterval = null;
@@ -1079,6 +1082,13 @@ class PizzicaGame {
         };
         tick();
         this.demoTimerInterval = setInterval(tick, 200);
+    }
+
+    // V22: ogni cifra del conto alla rovescia «scoppia» (giallo, zoom + dissolvenza): mai statico
+    setCountdownNumber(n) {
+        const el = this.countdown;
+        el.textContent = n;
+        el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
     }
 
     stopDemoTimer() {
@@ -1361,12 +1371,12 @@ class PizzicaGame {
         if (this.btnReplay) this.btnReplay.disabled = true;
         this.countdown.style.display = 'block';
         let count = 3;
-        this.countdown.textContent = count;
+        this.setCountdownNumber(count);
 
         const countInterval = setInterval(() => {
             count--;
             if (count > 0) {
-                this.countdown.textContent = count;
+                this.setCountdownNumber(count);
             } else {
                 clearInterval(countInterval);
                 this.countdown.style.display = 'none';
@@ -1521,12 +1531,12 @@ class PizzicaGame {
         this.countdown.style.display = 'block';
 
         let count = 3;
-        this.countdown.textContent = count;
+        this.setCountdownNumber(count);
 
         const countInterval = setInterval(() => {
             count--;
             if (count > 0) {
-                this.countdown.textContent = count;
+                this.setCountdownNumber(count);
             } else {
                 clearInterval(countInterval);
                 this.countdown.style.display = 'none';
@@ -2129,12 +2139,12 @@ class PizzicaGame {
         // Countdown de 3 secondes
         this.countdown.style.display = 'block';
         let count = 3;
-        this.countdown.textContent = count;
+        this.setCountdownNumber(count);
 
         const countInterval = setInterval(() => {
             count--;
             if (count > 0) {
-                this.countdown.textContent = count;
+                this.setCountdownNumber(count);
             } else {
                 clearInterval(countInterval);
                 this.countdown.style.display = 'none';
