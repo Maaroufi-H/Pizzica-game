@@ -44,6 +44,17 @@ function cacheControl(ext, name) {
 
 const server = createServer(async (req, res) => {
     try {
+        // V20: la racine renvoie une redirection HTTP (302, jamais mise en cache) vers la
+        // version courante lue dans <ROOT>/CURRENT — un cache (proxy, navigateur, app
+        // Android) ne peut plus garder une vieille page d'accueil pointant sur une vieille version.
+        if (req.url === '/' || req.url.startsWith('/?') || req.url === '/index.html') {
+            let cur = '';
+            try { cur = (await fsp.readFile(join(ROOT, 'CURRENT'), 'utf8')).trim(); } catch (e) { cur = ''; }
+            if (/^v\d+$/.test(cur)) {
+                res.writeHead(302, { Location: `/${cur}/`, 'Cache-Control': 'no-store' }).end();
+                return;
+            }
+        }
         // V24: sauvegarde de la matrice des mouvements (admin), token obligatoire
         if (req.method === 'POST' && req.url === '/api/dance-config') {
             const token = process.env.ADMIN_TOKEN || '';
