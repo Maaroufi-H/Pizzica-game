@@ -73,7 +73,7 @@ function tilesForLevel(level) {
 // ============================================
 const CHARACTERS = {
     man: [{ id: 'm9', img: 'm9.webp', name: 'Ballerino di pizzica' }],
-    woman: [{ id: 'w4', img: 'w4.webp', name: 'Ballerina di pizzica' }]
+    woman: [{ id: 'w4', img: 'w4b.webp', name: 'Ballerina di pizzica' }]
 };
 
 function getChar(role) {
@@ -95,10 +95,10 @@ const MOVES = {
         { id: 'm13', img: 'm13.webp', name: 'e — PIZZICA (saltelli CMU 49_02 + braccia alte CMU 55_01)' }
     ],
     woman: [
-        { id: 'w4', img: 'w4.webp', name: 'a — whirl (CMU 55_01)' },
-        { id: 'w5', img: 'w5b.webp', name: 'b — salsa lenta (CMU 61_02, ×0,5)' },
-        { id: 'w6', img: 'w6b.webp', name: 'c — charleston lento (CMU 93_04, ×0,6)' },
-        { id: 'w7', img: 'w7c.webp', name: 'e — PIZZICA col fazzoletto (saltelli 49_02 + braccia alte 55_01)' }
+        { id: 'w4', img: 'w4b.webp', name: 'a — whirl (CMU 55_01)' },
+        { id: 'w5', img: 'w5c.webp', name: 'b — salsa lenta (CMU 61_02, ×0,5)' },
+        { id: 'w6', img: 'w6c.webp', name: 'c — charleston lento (CMU 93_04, ×0,6)' },
+        { id: 'w7', img: 'w7c.webp', name: 'e — PIZZICA (saltelli 49_02 + braccia alte 55_01)' }
     ]
 };
 const DANCE_KEYS = ['REST', 'E_V', 'F_V', 'E_H', 'F_H', 'A', 'B', 'K', 'L', 'G', 'PIVOT', 'IDLE'];

@@ -160,3 +160,7 @@ mentre quella del nuovo movimento sale da 0 a 1. Il fantasma è poi rimosso. Ide
 
 **Cache**: gli sprite hanno `Cache-Control: max-age=86400`; quando un movimento cambia, il file prende un **nuovo nome**
 (`m10b.webp`…) altrimenti i browser mostrano per 24 h la vecchia animazione.
+
+**Foulard in tutte le danze di lei (V20)**: il foulard simulato è ora presente in **ogni** movimento della ballerina
+(`--hanky` su whirl 55_01 → `w4b`, salsa 61_02 → `w5c`, charleston 93_04 → `w6c`, pizzica → `w7c`): nel whirl fila in
+lunghe arabesche dietro la mano alta, nella salsa e nel charleston pende e ondeggia. Stessa fisica, stessi parametri.
