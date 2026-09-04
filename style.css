@@ -1682,3 +1682,7 @@ button:disabled {
 
 /* V22: il timer della demo sta in alto, ben staccato dal carreau */
 #demo-timer { margin-bottom: 22px; font-size: 2.6rem; }
+
+/* V22: firma anche sullo schermo d'ingresso */
+#start-credits { margin-top: 18px; color: #ffd700; font-family: Georgia, 'Times New Roman', serif; font-style: italic; letter-spacing: 1px; font-size: 1rem; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+#start-credits small { display: block; font-size: 0.75rem; color: #00ffcc; font-style: normal; margin-top: 3px; }
