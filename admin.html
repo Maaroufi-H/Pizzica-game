@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Pizzica Master — Amministrazione</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #0d0d14; color: #eee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 18px; }
+        h1 { color: #ff0055; font-size: 1.3rem; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 4px; }
+        .sub { color: #00ffcc; font-size: .9rem; margin-bottom: 14px; }
+        .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+        input[type=password] { background: #1a1a2a; color: #fff; border: 1px solid #5555ff; border-radius: 8px; padding: 8px 10px; width: 280px; }
+        button { background: linear-gradient(135deg, #ff0055, #cc0044); color: #fff; border: 0; border-radius: 30px; padding: 9px 20px; font-weight: bold; cursor: pointer; }
+        button.sec { background: linear-gradient(135deg, #0088ff, #0055aa); }
+        button:disabled { background: #444; cursor: default; }
+        #msg { font-size: .85rem; color: #ffd700; min-height: 1.2em; }
+        table { width: 100%; border-collapse: collapse; background: rgba(22,22,58,.55); border: 1px solid #5555ff; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid rgba(85,85,255,.35); vertical-align: middle; }
+        th { color: #ffd700; text-align: left; font-size: .8rem; letter-spacing: 1px; background: rgba(0,0,0,.35); }
+        td.state { color: #fff; font-weight: 600; }
+        td.state small { display: block; color: #aaa; font-weight: normal; font-size: .72rem; }
+        select { background: #1a1a2a; color: #fff; border: 1px solid #5555ff; border-radius: 6px; padding: 6px; min-width: 190px; }
+        .prev { width: 56px; height: 56px; background: rgba(0,0,0,.4); border-radius: 8px; object-fit: contain; vertical-align: middle; margin-left: 8px; }
+        .cell { display: flex; align-items: center; gap: 6px; }
+        .lib { margin-top: 22px; }
+        .lib h2 { color: #00ffcc; font-size: 1rem; }
+        .cards { display: flex; flex-wrap: wrap; gap: 12px; }
+        .card { background: rgba(22,22,58,.7); border: 1px solid #5555ff; border-radius: 10px; padding: 8px; width: 150px; text-align: center; font-size: .75rem; color: #ccc; }
+        .card img { width: 110px; height: 110px; object-fit: contain; display: block; margin: 0 auto 6px; background: rgba(0,0,0,.35); border-radius: 8px; }
+        .card b { color: #ffd700; display: block; }
+    </style>
+</head>
+<body>
+    <h1>Pizzica Master — matrice dei movimenti</h1>
+    <div class="sub">Assegna a ogni <b>stato della macchina</b> il movimento di danza di lui e di lei. Le animazioni vengono da vera motion capture.</div>
+
+    <div class="bar">
+        <input type="password" id="token" placeholder="token amministratore">
+        <button class="sec" id="btn-load">Carica</button>
+        <button id="btn-save" disabled>Salva la matrice</button>
+        <button class="sec" id="btn-reset">Ripristina i valori di base</button>
+        <span id="msg"></span>
+    </div>
+
+    <table id="matrix">
+        <thead><tr><th style="width:38%">Stato della macchina</th><th>Lui</th><th>Lei</th></tr></thead>
+        <tbody></tbody>
+    </table>
+
+    <div class="lib">
+        <h2>Libreria dei movimenti disponibili</h2>
+        <div class="cards" id="cards"></div>
+    </div>
+
+    <script>
+    // ------ les memes listes que game.js (source de verite: dance-config.json + defauts ici)
+    const MOVES = {
+        man: [
+            { id: 'm9',  img: 'm9.webp',  name: 'a — whirl (giro su se stesso, CMU 55_01)' },
+            { id: 'm10', img: 'm10.webp', name: 'b — salsa (CMU 61_02)' },
+            { id: 'm11', img: 'm11.webp', name: 'c — charleston (CMU 93_05)' },
+            { id: 'm12', img: 'm12.webp', name: 'd — salsa (CMU 60_01)' }
+        ],
+        woman: [
+            { id: 'w4', img: 'w4.webp', name: 'a — whirl (giro su se stessa, CMU 55_01)' },
+            { id: 'w5', img: 'w5.webp', name: 'b — salsa (CMU 61_02)' },
+            { id: 'w6', img: 'w6.webp', name: 'c — charleston (CMU 93_04)' }
+        ]
+    };
+    const STATES = [
+        ['REST',   'Riposo con piroetta (stato C)', 'fermi sul cerchio esterno, girano su se stessi'],
+        ['E_V',    'Avvicinamento verticale (E)', 'traslazione verso il centro sulla linea verticale'],
+        ['F_V',    'Ritorno verticale (F)', 'ritorno al cerchio sulla linea verticale'],
+        ['E_H',    'Avvicinamento orizzontale (E)', 'dopo un quarto di giro: verso il centro in orizzontale'],
+        ['F_H',    'Ritorno orizzontale (F)', 'ritorno al cerchio in orizzontale'],
+        ['A',      'Mezzo giro orario (A)', 'mezzo cerchio con scia di stelle'],
+        ['B',      'Mezzo giro antiorario (B)', 'mezzo cerchio con scia di stelle'],
+        ['K',      'Quarto di giro orario (K)', ''],
+        ['L',      'Quarto di giro antiorario (L)', ''],
+        ['G',      'Incrocio al centro (G)', 'piroette alternate'],
+        ['PIVOT',  'Pivot di transizione', 'al cambio di senso, senza stelle'],
+        ['IDLE',   'Attesa del clic', 'dopo la sequenza, mentre il giocatore sceglie']
+    ];
+    const DEFAULTS = { man: {}, woman: {} };
+    STATES.forEach(([k]) => { DEFAULTS.man[k] = 'm9'; DEFAULTS.woman[k] = 'w4'; });
+
+    const $ = s => document.querySelector(s);
+    const tbody = $('#matrix tbody');
+    let config = JSON.parse(JSON.stringify(DEFAULTS));
+
+    function imgOf(role, id) { const m = MOVES[role].find(x => x.id === id) || MOVES[role][0]; return m.img; }
+    function render() {
+        tbody.innerHTML = '';
+        STATES.forEach(([key, label, hint]) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="state">${label}<small>${hint}</small></td>` +
+                ['man', 'woman'].map(role => {
+                    const opts = MOVES[role].map(m => `<option value="${m.id}" ${config[role][key] === m.id ? 'selected' : ''}>${m.name}</option>`).join('');
+                    return `<td><div class="cell"><select data-role="${role}" data-key="${key}">${opts}</select><img class="prev" src="${imgOf(role, config[role][key])}" alt=""></div></td>`;
+                }).join('');
+            tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('select').forEach(sel => sel.addEventListener('change', e => {
+            const { role, key } = e.target.dataset;
+            config[role][key] = e.target.value;
+            e.target.nextElementSibling.src = imgOf(role, e.target.value);
+            $('#btn-save').disabled = !$('#token').value;
+        }));
+        $('#cards').innerHTML = ['man', 'woman'].map(role => MOVES[role].map(m =>
+            `<div class="card"><img src="${m.img}" alt=""><b>${role === 'man' ? 'Lui' : 'Lei'}</b>${m.name}</div>`).join('')).join('');
+    }
+    function say(t) { $('#msg').textContent = t; }
+
+    async function load() {
+        try {
+            const r = await fetch('/dance-config.json', { cache: 'no-store' });
+            if (r.ok) {
+                const c = await r.json();
+                ['man', 'woman'].forEach(role => STATES.forEach(([k]) => { if (c[role] && c[role][k]) config[role][k] = c[role][k]; }));
+                say('Matrice caricata dal server.');
+            } else say('Nessuna matrice salvata: valori di base.');
+        } catch (e) { say('Impossibile leggere la matrice: ' + e.message); }
+        render();
+        $('#btn-save').disabled = !$('#token').value;
+    }
+    async function save() {
+        const token = $('#token').value.trim();
+        if (!token) { say('Inserisci il token.'); return; }
+        localStorage.setItem('pizzica-admin-token', token);
+        const r = await fetch('/api/dance-config', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token }, body: JSON.stringify(config) });
+        say(r.ok ? 'Salvato ✓ — il gioco usa la nuova matrice al prossimo avvio (o ricarica).' : `Errore ${r.status}: ${await r.text()}`);
+    }
+    $('#btn-load').addEventListener('click', load);
+    $('#btn-save').addEventListener('click', save);
+    $('#btn-reset').addEventListener('click', () => { config = JSON.parse(JSON.stringify(DEFAULTS)); render(); say('Valori di base ripristinati (non ancora salvati).'); });
+    $('#token').addEventListener('input', () => { $('#btn-save').disabled = !$('#token').value; });
+    $('#token').value = localStorage.getItem('pizzica-admin-token') || '';
+    load();
+    </script>
+</body>
+</html>

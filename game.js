@@ -72,7 +72,7 @@ function tilesForLevel(level) {
 // ============================================
 const CHARACTERS = {
     man: [{ id: 'm9', img: 'm9.webp', name: 'Ballerino di pizzica' }],
-    woman: [{ id: 'w3', img: 'w3.webp', name: 'Ballerina' }]
+    woman: [{ id: 'w4', img: 'w4.webp', name: 'Ballerina di pizzica' }]
 };
 
 function getChar(role) {
@@ -80,82 +80,45 @@ function getChar(role) {
 }
 
 // ============================================
-// V22: COREOGRAFIE VARIABILI (vraie capture de mouvement CMU)
-// Chaque role a des VARIANTES de danse (sprites). La variante 0 est la danse
-// de base (preservee). Chaque palier de niveaux a SA danse et reprend celles
-// des paliers precedents pendant 5-10 s; on change de danse toutes les
-// 5-10 s. Le plan est deterministe (depend du niveau) et lu sur une horloge
-// GLOBALE: tous les carreaux montrent exactement la meme danse au meme
-// instant, la coreographie ne peut donc rien trahir du carreau correct.
+// V24: MATRICE DES MOUVEMENTS — a chaque ETAT de la machine correspond un
+// mouvement de danse (vraie capture de mouvement) pour lui et pour elle.
+// La matrice est administrable (admin.html -> /dance-config.json); a defaut,
+// tout le monde danse le mouvement de base.
 // ============================================
-const CHOREO = {
+const MOVES = {
     man: [
-        { id: 'm9',  img: 'm9.webp',  name: 'whirl (CMU 55_01)' },
-        { id: 'm10', img: 'm10.webp', name: 'salsa (CMU 61_02)' },
-        { id: 'm11', img: 'm11.webp', name: 'charleston (CMU 93_05)' },
-        { id: 'm12', img: 'm12.webp', name: 'salsa (CMU 60_01)' }
+        { id: 'm9',  img: 'm9.webp',  name: 'a — whirl (CMU 55_01)' },
+        { id: 'm10', img: 'm10.webp', name: 'b — salsa (CMU 61_02)' },
+        { id: 'm11', img: 'm11.webp', name: 'c — charleston (CMU 93_05)' },
+        { id: 'm12', img: 'm12.webp', name: 'd — salsa (CMU 60_01)' }
     ],
     woman: [
-        { id: 'w3', img: 'w3.webp', name: 'base (Noto)' },
-        { id: 'w4', img: 'w4.webp', name: 'whirl (CMU 55_01)' },
-        { id: 'w5', img: 'w5.webp', name: 'salsa (CMU 61_02)' },
-        { id: 'w6', img: 'w6.webp', name: 'charleston (CMU 93_04)' }
-    ],
-    // par palier: [danse propre, ...danses reprises pendant 4-6 s]
-    // V23: meme au premier palier il y a une variation (l'owner ne voyait
-    // aucun changement au niveau 1)
-    tiers: {
-        man:   [[0, 3], [1, 0, 3], [2, 0, 1, 3]],
-        woman: [[0, 1], [2, 0, 1], [3, 0, 1, 2]]
-    },
-    startedAt: 0
+        { id: 'w4', img: 'w4.webp', name: 'a — whirl (CMU 55_01)' },
+        { id: 'w5', img: 'w5.webp', name: 'b — salsa (CMU 61_02)' },
+        { id: 'w6', img: 'w6.webp', name: 'c — charleston (CMU 93_04)' }
+    ]
 };
+const DANCE_KEYS = ['REST', 'E_V', 'F_V', 'E_H', 'F_H', 'A', 'B', 'K', 'L', 'G', 'PIVOT', 'IDLE'];
+const DANCE_MAP = { man: {}, woman: {} };
+DANCE_KEYS.forEach(k => { DANCE_MAP.man[k] = 'm9'; DANCE_MAP.woman[k] = 'w4'; });
 
-function tierOf(level) {
-    return Math.min(2, Math.floor((level - 1) / 3));
+function moveImg(role, key) {
+    const id = DANCE_MAP[role][key];
+    const m = MOVES[role].find(x => x.id === id) || MOVES[role][0];
+    return m.img;
 }
 
-// generateur deterministe (LCG) pour un plan reproductible par niveau
-function seeded(seed) {
-    let x = (seed * 9301 + 49297) % 233280;
-    return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; };
-}
-
-/**
- * Plan de coreographie d'un niveau: liste de segments {v, ms}.
- * - la danse propre au palier occupe ~60% du temps par tranches de 6-10 s,
- * - entre deux, une danse d'un palier PRECEDENT pendant 5-8 s
- *   (au palier 0: petites variations de la base seulement).
- */
-function choreoPlan(role, level) {
-    const tier = tierOf(level);
-    const [own, ...prevs] = CHOREO.tiers[role][tier];
-    const rnd = seeded(level * 37 + (role === 'man' ? 11 : 23));
-    const plan = [];
-    let total = 0;
-    while (total < 120000) {                       // 2 minutes de plan, en boucle ensuite
-        const ownMs = 5000 + Math.round(rnd() * 3000);        // 5-8 s de danse propre
-        plan.push({ v: own, ms: ownMs }); total += ownMs;
-        const pv = prevs[Math.floor(rnd() * prevs.length)];
-        const pms = 4000 + Math.round(rnd() * 2500);          // 4-6.5 s de reprise
-        plan.push({ v: pv, ms: pms }); total += pms;
-    }
-    return plan;
-}
-
-function choreoVariantAt(role, level, elapsedMs) {
-    const plan = choreoPlan(role, level);
-    const total = plan.reduce((a, s) => a + s.ms, 0);
-    let t = ((elapsedMs % total) + total) % total;
-    for (const seg of plan) {
-        if (t < seg.ms) return CHOREO[role][seg.v] || CHOREO[role][0];
-        t -= seg.ms;
-    }
-    return CHOREO[role][0];
-}
-
-function choreoStart() {
-    CHOREO.startedAt = performance.now();
+// charge la matrice administree (racine du site, partagee par les versions)
+function loadDanceConfig() {
+    return fetch('/dance-config.json', { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .then(c => {
+            if (!c) return;
+            ['man', 'woman'].forEach(role => DANCE_KEYS.forEach(k => {
+                if (c[role] && c[role][k] && MOVES[role].some(m => m.id === c[role][k])) DANCE_MAP[role][k] = c[role][k];
+            }));
+        })
+        .catch(() => {});
 }
 
 // ============================================
@@ -321,16 +284,29 @@ class Couple {
         this.applyPosition(true);
     }
 
-    // V22: change le sprite si la coreographie l'exige (identique partout)
-    applyChoreo(level, elapsedMs) {
-        const pairs = [['man', this.manWrapper], ['woman', this.womanWrapper]];
-        pairs.forEach(([role, w]) => {
+    // V24: le mouvement de danse depend de l'ETAT (matrice administrable)
+    applyDance(key) {
+        [['man', this.manWrapper], ['woman', this.womanWrapper]].forEach(([role, w]) => {
             if (!w) return;
             const img = w.querySelector('img.dancer');
             if (!img) return;
-            const v = choreoVariantAt(role, level, elapsedMs);
-            if (img.getAttribute('src') !== v.img) img.setAttribute('src', v.img);
+            const src = moveImg(role, key);
+            if (img.getAttribute('src') !== src) img.setAttribute('src', src);
         });
+    }
+
+    // cle de la matrice pour un etat, selon l'orientation courante de la roue
+    danceKeyFor(state) {
+        const horiz = ((Math.round(this.wheelAngle) % 180) + 180) % 180 === 90;
+        if (state === STATE.E) return horiz ? 'E_H' : 'E_V';
+        if (state === STATE.F) return horiz ? 'F_H' : 'F_V';
+        if (state === STATE.C || state === STATE.D) return 'REST';
+        if (state === STATE.A) return 'A';
+        if (state === STATE.B) return 'B';
+        if (state === STATE.K) return 'K';
+        if (state === STATE.L) return 'L';
+        if (state === STATE.G) return 'G';
+        return 'REST';
     }
 
     computeGeometry() {
@@ -555,6 +531,8 @@ class Couple {
 
         // V6 PRO: Reset animation classes
         this.clearAnimationClasses();
+        // V24: mouvement de danse de l'etat (avant tout changement d'angle)
+        this.applyDance(this.danceKeyFor(newState));
 
         switch(newState) {
             case STATE.C:
@@ -602,6 +580,7 @@ class Couple {
                 const go = () => {
                     this.wheelAngle += dir * (half ? 180 : 90);
                     this.clearAnimationClasses();
+                    this.applyDance(this.danceKeyFor(newState));
                     this.setSpinDuration(arcMs);
                     this.setAnimationClass('rotating');
                     // V15: trainee d'etoiles derriere les danseurs sur le cercle
@@ -616,6 +595,7 @@ class Couple {
                     duration += CONFIG.TURN_TRANSITION;
                     this.setSpinDuration(CONFIG.TURN_TRANSITION);
                     this.setAnimationClass('turn-settle');
+                    this.applyDance('PIVOT');
                     const tGo = setTimeout(go, CONFIG.TURN_TRANSITION);
                     this.internalTimers.push(tGo);
                     deferred = true;
@@ -893,15 +873,8 @@ class PizzicaGame {
         window.addEventListener('resize', onViewportChange);
         window.addEventListener('orientationchange', onViewportChange);
 
-        // V22: horloge globale des coreographies (toutes les 250 ms)
-        choreoStart();
-        setInterval(() => {
-            const el = performance.now() - CHOREO.startedAt;
-            [this.previewCouple, this.demoCouple, this.comparisonDemoCouple,
-                this.comparisonUserCouple, ...(this.couples || [])].forEach(c => {
-                if (c && c.wheel && c.wheel.isConnected) c.applyChoreo(this.currentLevel, el);
-            });
-        }, 250);
+        // V24: matrice des mouvements administree (racine du site)
+        loadDanceConfig().then(() => { if (this.previewCouple) this.previewCouple.applyDance('IDLE'); });
     }
 
     remeasureAllCouples() {
@@ -1072,9 +1045,6 @@ class PizzicaGame {
 
         // Jouer la musique
         this.playLevelMusic();
-
-        // V22: nouvelle horloge de coreographie pour ce niveau
-        choreoStart();
 
         // V12: la SCENE de depart est montee AVANT le countdown - le joueur
         // voit deja les danseurs en position initiale pendant le 3-2-1
@@ -1617,6 +1587,7 @@ class PizzicaGame {
                 // comme des elements de sequence supplementaires
                 couple.stopAnimations();
                 couple.setAnimationClass('dancing');
+                couple.applyDance('IDLE');
                 remaining--;
                 if (remaining === 0) this.finishGame();
             });

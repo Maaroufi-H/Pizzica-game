@@ -103,3 +103,14 @@ Obiettivo: il giocatore non deve vedere sempre la stessa danza. Base preservata,
 * Ballerino: variante 0 = *whirl*, 1 = *salsa* 61_02, 2 = *charleston*, 3 = *salsa* 60_01.
 * **V18** — piani per fascia `CHOREO.tiers`: Principiante `[base, variazione]`, Intermedio `[propria, base, …]`,
   Avanzato `[propria, tutte le precedenti]`; danza propria 5–8 s, riprese 4–6,5 s: la danza cambia **a ogni livello**.
+
+## 5. Matrice stato → movimento (V19)
+
+La coreografia a tempo (V17/V18) è sostituita da una **matrice**: `DANCE_MAP[role][key]` con
+`key ∈ {REST, E_V, F_V, E_H, F_H, A, B, K, L, G, PIVOT, IDLE}`. `Couple.danceKeyFor(state)` deduce la
+chiave dallo stato e dall'orientamento della roue (`wheelAngle mod 180 == 90` → linea orizzontale);
+`applyDance(key)` cambia lo sprite (`img.src`) all'inizio di ogni stato (il pivot ha il suo mouvement).
+La matrice è caricata da `/dance-config.json` (radice del sito, `no-store`) e amministrata da `admin.html`
+(token → `POST /api/dance-config`, validazione delle chiavi/valori lato server). Movimenti disponibili:
+lui `m9` whirl, `m10` salsa 61_02, `m11` charleston, `m12` salsa 60_01; lei `w4` whirl, `w5` salsa,
+`w6` charleston (tutti da vera motion capture, stesso modello disegnato).

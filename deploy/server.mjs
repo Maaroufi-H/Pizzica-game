@@ -34,7 +34,8 @@ const MIME = {
 };
 
 // cache long pour les gros medias immuables, court pour le code du jeu
-function cacheControl(ext) {
+function cacheControl(ext, name) {
+    if (name === 'dance-config.json') return 'no-store';
     if (['.mp3', '.mp4', '.png', '.webp', '.jpg', '.jpeg'].includes(ext)) {
         return 'public, max-age=86400';
     }
@@ -43,8 +44,34 @@ function cacheControl(ext) {
 
 const server = createServer(async (req, res) => {
     try {
+        // V24: sauvegarde de la matrice des mouvements (admin), token obligatoire
+        if (req.method === 'POST' && req.url === '/api/dance-config') {
+            const token = process.env.ADMIN_TOKEN || '';
+            if (!token || req.headers['x-admin-token'] !== token) {
+                res.writeHead(401, { 'Content-Type': 'text/plain' }).end('token non valido');
+                return;
+            }
+            let body = '';
+            req.on('data', (c) => { body += c; if (body.length > 20000) req.destroy(); });
+            req.on('end', async () => {
+                try {
+                    const cfg = JSON.parse(body);
+                    const clean = { man: {}, woman: {} };
+                    for (const role of ['man', 'woman']) {
+                        for (const [k, v] of Object.entries(cfg[role] || {})) {
+                            if (/^[A-Z_]{1,8}$/.test(k) && /^[mw]\d{1,2}$/.test(String(v))) clean[role][k] = String(v);
+                        }
+                    }
+                    await fsp.writeFile(join(ROOT, 'dance-config.json'), JSON.stringify(clean, null, 2));
+                    res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(clean));
+                } catch (e) {
+                    res.writeHead(400, { 'Content-Type': 'text/plain' }).end('JSON non valido');
+                }
+            });
+            return;
+        }
         if (req.method !== 'GET' && req.method !== 'HEAD') {
-            res.writeHead(405, { Allow: 'GET, HEAD' }).end();
+            res.writeHead(405, { Allow: 'GET, HEAD, POST' }).end();
             return;
         }
 
@@ -84,7 +111,7 @@ const server = createServer(async (req, res) => {
         const headers = {
             'Content-Type': MIME[ext] || 'application/octet-stream',
             'Accept-Ranges': 'bytes',
-            'Cache-Control': cacheControl(ext),
+            'Cache-Control': cacheControl(ext, filePath.split(sep).pop()),
         };
 
         const range = req.headers.range;
