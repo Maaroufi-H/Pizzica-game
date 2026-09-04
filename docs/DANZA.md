@@ -135,5 +135,13 @@ alte e giri su se stessi), riscalate all'altezza del clip delle gambe; la testa 
 Per la ballerina si aggiunge il **fazzoletto** bianco nella mano più alta (`--hanky`). Sprite: `m13` / `w7`.
 Il tempo del loop resta 1,6 s (≈ 2 saltelli per ciclo).
 
-**Salsa b rallentata (V20)**: lo stesso loop reale di 61_02 è ricampionato su 96 immagini a 25 img/s
-(`--nout 96`), cioè ×0,4 della velocità reale: i passi restano leggibili.
+**Salsa b rallentata e senza giri (V20)**: la boucle scelta in origine dentro 61_02 conteneva **un giro e mezzo reale**
+del ballerino (564° di rotazione del bacino in 1,6 s); raddrizzato fronte camera, sembrava «un matto che gira a velocità
+folle». `find_loop` accetta ora l'opzione `--maxyaw 50`: le finestre in cui il bacino ruota più di 50° sono escluse, e tra
+le altre si tiene una boucle energica (≥ 55 % dell'energia massima) che si richiude bene. La boucle scelta (frame 312,
+49° di rotazione) è ricampionata su 80 immagini a 25 img/s (`--nout 80`), cioè ×0,5 della velocità reale.
+Stesso filtro per la salsa d (60_01): la vecchia boucle conteneva mezzo giro (165°), la nuova 18°.
+
+**Foulard della pizzica (V20)**: non più un fazzolettino statico ma un **foulard lungo** (36 % dell'altezza), bianco con
+bordo rosso, tenuto nella mano più alta. È dinamico: la sua direzione è la somma della gravità e dell'opposto della velocità
+della mano (calcolata sulle immagini vicine della capture), e ondeggia con due onde per ciclo, così il loop resta continuo.
