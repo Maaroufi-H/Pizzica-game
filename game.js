@@ -975,8 +975,7 @@ class PizzicaGame {
         this.playerInput.value = this.playerName;
         const syncPlay = () => { this.playerName = this.playerInput.value.replace(/\s+/g, ' ').trim(); this.btnPlay.disabled = this.playerName.length < 2; };
         this.playerInput.addEventListener('input', () => { this.playerLogged = false; syncPlay(); this.updateAdminUI(); });
-        // V22: profilo di debug «hatem_admin» (richiede il token amministratore gia' inserito
-        // nella pagina di amministrazione, stesso browser): scelta libera del livello e salto
+        // V22: profilo di debug «hatem_admin»: scelta libera del livello e salto
         // del livello senza indovinare, per provare i livelli avanzati.
         this.adminPanel = document.getElementById('admin-panel');
         this.btnAdminSkip = document.getElementById('btn-admin-skip');
@@ -1234,18 +1233,14 @@ class PizzicaGame {
         this.homeScreen.style.display = 'flex';
     }
 
+    // V22: il solo nome «hatem_admin» attiva la modalita' di debug (scelta owner: semplice)
     isAdminPlayer() {
-        let tok = '';
-        try { tok = localStorage.getItem('pizzica-admin-token') || ''; } catch (e) { tok = ''; }
-        return this.playerName.toLowerCase() === 'hatem_admin' && tok.length >= 16;
+        return this.playerName.toLowerCase() === 'hatem_admin';
     }
 
     updateAdminUI() {
         const admin = this.isAdminPlayer();
         this.adminPanel.style.display = admin ? 'flex' : 'none';
-        if (this.playerName.toLowerCase() === 'hatem_admin' && !admin) {
-            this.playerInfo.textContent = 'Profilo admin: apri prima la pagina di amministrazione e inserisci il token (stesso browser), poi torna qui.';
-        }
         if (!admin) this.btnAdminSkip.style.display = 'none';
     }
 
