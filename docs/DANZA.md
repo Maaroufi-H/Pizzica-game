@@ -207,3 +207,7 @@ passo cade sul battito.
 **Medley (l)**: i sei passi incatenati in un solo sprite continuo — ogni passo per 8 battiti, fondu di posa di 0,45 s ad
 ogni giunzione (la boucle precedente continua e si fonde nella nuova), foulard simulato su tutta la sequenza, loop globale
 (48 battiti ≈ 30 s, 750 / 727 immagini).
+
+**Amministrazione (V21)**: ogni salvataggio richiede il token (401 altrimenti: nulla viene scritto) e va nello **storico**
+`dance-history.json` (nome, data, matrice; `GET /api/dance-history`), da cui una vecchia matrice si riprende nell'editor e si
+risalva. «Ricarica dal server» rilegge la matrice attiva; «Valori di base» rimette il whirl ovunque senza salvare.

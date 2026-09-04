@@ -30,17 +30,31 @@
         .card { background: rgba(22,22,58,.7); border: 1px solid #5555ff; border-radius: 10px; padding: 8px; width: 150px; text-align: center; font-size: .75rem; color: #ccc; }
         .card img { width: 110px; height: 110px; object-fit: contain; display: block; margin: 0 auto 6px; background: rgba(0,0,0,.35); border-radius: 8px; }
         .card b { color: #ffd700; display: block; }
+        .help { background: rgba(22,22,58,.55); border: 1px solid #5555ff; border-radius: 10px; padding: 10px 14px; font-size: .85rem; color: #ddd; margin-bottom: 14px; line-height: 1.5; }
+        .help b { color: #ffd700; }
+        input[type=text] { background: #1a1a2a; color: #fff; border: 1px solid #5555ff; border-radius: 8px; padding: 8px 10px; width: 220px; }
+        #history table { margin-top: 8px; }
+        #history button { padding: 5px 12px; font-size: .8rem; margin-right: 6px; }
+        #history .cur { color: #00ffcc; font-size: .75rem; }
     </style>
 </head>
 <body>
     <h1>Pizzica Master — matrice dei movimenti</h1>
     <div class="sub">Assegna a ogni <b>stato della macchina</b> il movimento di danza di lui e di lei. Le animazioni vengono da vera motion capture (CMU) e, per i passi f–l, da <b>video reali di pizzica</b> analizzati immagine per immagine; i passi «a tempo» seguono il battito della musica del livello.</div>
 
+    <div class="help">
+        <b>Come funziona.</b> La matrice qui sotto è quella <b>attiva nel gioco</b> (file <code>dance-config.json</code>, letto da tutte le versioni).
+        Modifica i menu, dai un <b>nome</b> alla matrice e premi <b>Salva la matrice</b>: serve il <b>token amministratore</b> (32 caratteri, file
+        <code>ADMIN_TOKEN.txt</code> nella cartella <code>Pizzica-game-keys</code>; senza token corretto il server risponde 401 e nulla viene salvato).
+        <b>Ricarica dal server</b> rilegge la matrice attiva (annulla le modifiche non salvate). <b>Valori di base</b> rimette il whirl ovunque (non salva).
+        Ogni salvataggio finisce nello <b>storico</b> in fondo: da lì puoi <b>riprendere</b> una vecchia matrice nell'editor e poi salvarla di nuovo.
+    </div>
     <div class="bar">
-        <input type="password" id="token" placeholder="token amministratore">
-        <button class="sec" id="btn-load">Carica</button>
+        <input type="password" id="token" placeholder="token amministratore (32 caratteri)">
+        <input type="text" id="name" placeholder="nome della matrice (es. x10409)" maxlength="40">
         <button id="btn-save" disabled>Salva la matrice</button>
-        <button class="sec" id="btn-reset">Ripristina i valori di base</button>
+        <button class="sec" id="btn-load" title="Rilegge la matrice attiva salvata sul server (annulla le modifiche non salvate)">Ricarica dal server</button>
+        <button class="sec" id="btn-reset" title="Rimette il movimento di base ovunque; non salva">Valori di base</button>
         <span id="msg"></span>
     </div>
 
@@ -48,6 +62,11 @@
         <thead><tr><th style="width:38%">Stato della macchina</th><th>Lui</th><th>Lei</th></tr></thead>
         <tbody></tbody>
     </table>
+
+    <div class="lib" id="history">
+        <h2>Storico delle matrici salvate</h2>
+        <div id="hist-body">Nessun salvataggio ancora.</div>
+    </div>
 
     <div class="lib">
         <h2>Libreria dei movimenti disponibili</h2>
@@ -128,6 +147,22 @@
             `<div class="card"><img src="${imgOf(role, m.id)}" alt=""><b>${role === 'man' ? 'Lui' : 'Lei'}</b>${m.name}</div>`).join('')).join('');
     }
     function say(t) { $('#msg').textContent = t; }
+    const NAMES = {}; ['man', 'woman'].forEach(r => MOVES[r].forEach(m => { NAMES[m.id] = m.name.split(' ')[0]; }));
+    function summary(c) { return STATES.map(([k]) => (NAMES[(c.man || {})[k]] || 'a') + '/' + (NAMES[(c.woman || {})[k]] || 'a')).join(' '); }
+    async function loadHistory() {
+        try {
+            const r = await fetch('/api/dance-history', { cache: 'no-store' }); const h = r.ok ? await r.json() : [];
+            if (!h.length) { $('#hist-body').textContent = 'Nessun salvataggio ancora.'; return; }
+            $('#hist-body').innerHTML = '<table><thead><tr><th>Quando</th><th>Nome</th><th>Lui/Lei per stato (C E F E F A B K L G pivot attesa)</th><th></th></tr></thead><tbody>' +
+                h.map((e, i) => `<tr><td>${new Date(e.at).toLocaleString('it-IT')}${i === 0 ? ' <span class="cur">← attiva</span>' : ''}</td><td><b>${e.name}</b></td><td style="font-size:.75rem;color:#bbb">${summary(e)}</td><td><button class="sec" data-i="${i}">Riprendi nell'editor</button></td></tr>`).join('') + '</tbody></table>';
+            $('#hist-body').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+                const e = h[+b.dataset.i];
+                ['man', 'woman'].forEach(role => STATES.forEach(([k]) => { config[role][k] = (e[role] && e[role][k]) || DEFAULTS[role][k]; }));
+                $('#name').value = e.name; render(); $('#btn-save').disabled = !$('#token').value;
+                say(`Matrice «${e.name}» ripresa nell'editor: premi «Salva la matrice» per renderla attiva.`); window.scrollTo(0, 0);
+            }));
+        } catch (e) { $('#hist-body').textContent = 'Storico non disponibile: ' + e.message; }
+    }
 
     async function load() {
         try {
@@ -135,18 +170,22 @@
             if (r.ok) {
                 const c = await r.json();
                 ['man', 'woman'].forEach(role => STATES.forEach(([k]) => { if (c[role] && c[role][k]) config[role][k] = c[role][k]; }));
-                say('Matrice caricata dal server.');
+                say('Matrice attiva ricaricata dal server.');
             } else say('Nessuna matrice salvata: valori di base.');
         } catch (e) { say('Impossibile leggere la matrice: ' + e.message); }
         render();
         $('#btn-save').disabled = !$('#token').value;
+        loadHistory();
     }
     async function save() {
         const token = $('#token').value.trim();
         if (!token) { say('Inserisci il token.'); return; }
         localStorage.setItem('pizzica-admin-token', token);
-        const r = await fetch('/api/dance-config', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token }, body: JSON.stringify(config) });
-        say(r.ok ? 'Salvato ✓ — il gioco usa la nuova matrice al prossimo avvio (o ricarica).' : `Errore ${r.status}: ${await r.text()}`);
+        const name = $('#name').value.trim() || 'senza nome';
+        const r = await fetch('/api/dance-config', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token }, body: JSON.stringify({ ...config, name }) });
+        if (r.ok) { say(`Salvata ✓ «${name}» — è ora la matrice attiva del gioco (ricarica la pagina del gioco).`); loadHistory(); }
+        else if (r.status === 401) say('NON salvata: token non valido. Il token amministratore ha 32 caratteri e si trova nel file ADMIN_TOKEN.txt (cartella Pizzica-game-keys).');
+        else say(`NON salvata: errore ${r.status}: ${await r.text()}`);
     }
     $('#btn-load').addEventListener('click', load);
     $('#btn-save').addEventListener('click', save);

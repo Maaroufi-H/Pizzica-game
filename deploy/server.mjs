@@ -74,11 +74,25 @@ const server = createServer(async (req, res) => {
                         }
                     }
                     await fsp.writeFile(join(ROOT, 'dance-config.json'), JSON.stringify(clean, null, 2));
+                    // V21: storico delle matrici salvate (nome, data, contenuto), ultime 60
+                    const name = String(cfg.name || '').replace(/[^\w\s\-.àèéìòù]/g, '').slice(0, 40).trim() || 'senza nome';
+                    let hist = [];
+                    try { hist = JSON.parse(await fsp.readFile(join(ROOT, 'dance-history.json'), 'utf8')); } catch (e) { hist = []; }
+                    if (!Array.isArray(hist)) hist = [];
+                    hist.unshift({ name, at: new Date().toISOString(), man: clean.man, woman: clean.woman });
+                    await fsp.writeFile(join(ROOT, 'dance-history.json'), JSON.stringify(hist.slice(0, 60), null, 1));
                     res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(clean));
                 } catch (e) {
                     res.writeHead(400, { 'Content-Type': 'text/plain' }).end('JSON non valido');
                 }
             });
+            return;
+        }
+        // V21: lettura dello storico (pubblico: contiene solo nomi di movimenti)
+        if (req.method === 'GET' && req.url.split('?')[0] === '/api/dance-history') {
+            let hist = '[]';
+            try { hist = await fsp.readFile(join(ROOT, 'dance-history.json'), 'utf8'); } catch (e) { hist = '[]'; }
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(hist);
             return;
         }
         if (req.method !== 'GET' && req.method !== 'HEAD') {
