@@ -78,6 +78,85 @@ function getChar(role) {
 }
 
 // ============================================
+// V22: COREOGRAFIE VARIABILI (vraie capture de mouvement CMU)
+// Chaque role a des VARIANTES de danse (sprites). La variante 0 est la danse
+// de base (preservee). Chaque palier de niveaux a SA danse et reprend celles
+// des paliers precedents pendant 5-10 s; on change de danse toutes les
+// 5-10 s. Le plan est deterministe (depend du niveau) et lu sur une horloge
+// GLOBALE: tous les carreaux montrent exactement la meme danse au meme
+// instant, la coreographie ne peut donc rien trahir du carreau correct.
+// ============================================
+const CHOREO = {
+    man: [
+        { id: 'm9',  img: 'm9.webp',  name: 'whirl (CMU 55_01)' },
+        { id: 'm10', img: 'm10.webp', name: 'salsa (CMU 61_02)' },
+        { id: 'm11', img: 'm11.webp', name: 'charleston (CMU 93_05)' }
+    ],
+    woman: [
+        { id: 'w3', img: 'w3.webp', name: 'base (Noto 💃)' },
+        { id: 'w4', img: 'w4.webp', name: 'whirl (CMU 55_01)' },
+        { id: 'w5', img: 'w5.webp', name: 'salsa (CMU 61_02)' },
+        { id: 'w6', img: 'w6.webp', name: 'charleston (CMU 93_04)' }
+    ],
+    // palier (0 principiante, 1 intermedio, 2 avanzato) -> variante propre
+    tierVariant: { man: [0, 1, 2], woman: [0, 1, 2] },
+    // couple homme/femme: la femme reprend en plus la variante 3 au palier 2
+    startedAt: 0
+};
+
+function tierOf(level) {
+    return Math.min(2, Math.floor((level - 1) / 3));
+}
+
+// generateur deterministe (LCG) pour un plan reproductible par niveau
+function seeded(seed) {
+    let x = (seed * 9301 + 49297) % 233280;
+    return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; };
+}
+
+/**
+ * Plan de coreographie d'un niveau: liste de segments {v, ms}.
+ * - la danse propre au palier occupe ~60% du temps par tranches de 6-10 s,
+ * - entre deux, une danse d'un palier PRECEDENT pendant 5-8 s
+ *   (au palier 0: petites variations de la base seulement).
+ */
+function choreoPlan(role, level) {
+    const tier = tierOf(level);
+    const own = CHOREO.tierVariant[role][tier];
+    const prevs = [];
+    for (let t = 0; t < tier; t++) prevs.push(CHOREO.tierVariant[role][t]);
+    if (role === 'woman' && tier === 2) prevs.push(3);
+    const rnd = seeded(level * 37 + (role === 'man' ? 11 : 23));
+    const plan = [];
+    let total = 0;
+    while (total < 120000) {                       // 2 minutes de plan, en boucle ensuite
+        const ownMs = 6000 + Math.round(rnd() * 4000);
+        plan.push({ v: own, ms: ownMs }); total += ownMs;
+        if (prevs.length) {
+            const pv = prevs[Math.floor(rnd() * prevs.length)];
+            const pms = 5000 + Math.round(rnd() * 3000);
+            plan.push({ v: pv, ms: pms }); total += pms;
+        }
+    }
+    return plan;
+}
+
+function choreoVariantAt(role, level, elapsedMs) {
+    const plan = choreoPlan(role, level);
+    const total = plan.reduce((a, s) => a + s.ms, 0);
+    let t = ((elapsedMs % total) + total) % total;
+    for (const seg of plan) {
+        if (t < seg.ms) return CHOREO[role][seg.v] || CHOREO[role][0];
+        t -= seg.ms;
+    }
+    return CHOREO[role][0];
+}
+
+function choreoStart() {
+    CHOREO.startedAt = performance.now();
+}
+
+// ============================================
 // DEFINITION DES ETATS
 // ============================================
 const STATE = {
@@ -222,6 +301,18 @@ class Couple {
 
         this.createDOM();
         this.applyPosition(true);
+    }
+
+    // V22: change le sprite si la coreographie l'exige (identique partout)
+    applyChoreo(level, elapsedMs) {
+        const pairs = [['man', this.manWrapper], ['woman', this.womanWrapper]];
+        pairs.forEach(([role, w]) => {
+            if (!w) return;
+            const img = w.querySelector('img.dancer');
+            if (!img) return;
+            const v = choreoVariantAt(role, level, elapsedMs);
+            if (img.getAttribute('src') !== v.img) img.setAttribute('src', v.img);
+        });
     }
 
     computeGeometry() {
@@ -778,6 +869,16 @@ class PizzicaGame {
         };
         window.addEventListener('resize', onViewportChange);
         window.addEventListener('orientationchange', onViewportChange);
+
+        // V22: horloge globale des coreographies (toutes les 250 ms)
+        choreoStart();
+        setInterval(() => {
+            const el = performance.now() - CHOREO.startedAt;
+            [this.previewCouple, this.demoCouple, this.comparisonDemoCouple,
+                this.comparisonUserCouple, ...(this.couples || [])].forEach(c => {
+                if (c && c.wheel && c.wheel.isConnected) c.applyChoreo(this.currentLevel, el);
+            });
+        }, 250);
     }
 
     remeasureAllCouples() {
@@ -948,6 +1049,9 @@ class PizzicaGame {
 
         // Jouer la musique
         this.playLevelMusic();
+
+        // V22: nouvelle horloge de coreographie pour ce niveau
+        choreoStart();
 
         // V12: la SCENE de depart est montee AVANT le countdown - le joueur
         // voit deja les danseurs en position initiale pendant le 3-2-1

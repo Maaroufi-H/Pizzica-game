@@ -1,0 +1,27 @@
+# Pizzica Master — Storico delle versioni
+
+Ogni evoluzione è una **nuova branch** `vN-*` derivata dalla precedente, deployata su
+`https://apps.marofai.site/vN/`. `main` contiene la versione originale e non viene mai toccata.
+La radice del sito reindirizza alla versione corrente.
+
+| Versione | Branch | Data | Contenuto |
+|---|---|---|---|
+| V1 | `main` | 11/2025 | Versione originale: 4 riquadri fissi, `cercle.jpg`, pausa ferma al centro, danzatori centrati con raggi in px fissi. |
+| V2 | `v2-play-store` | 27/08/2026 | Cornici ingrandite (griglia >80 % su Android), **geometria dei danzatori proporzionale al riquadro** (`Couple.computeGeometry`, ratio di `min(w,h)`), video di pizzica sullo sfondo (YouTube → mp4 90 s muto), PWA (manifest, service worker, icone), TWA Android firmata (Bubblewrap) per il Play Store, deploy VPS (Node `deploy/server.mjs` con Range, systemd, Caddy). |
+| V3 | `v3-crossing` | 27/08/2026 | **Piedi ancorati** al cerchio (`transform-origin 50% 100%`), guida SVG generata dal gioco (raggio = orbita dei piedi), riquadro monocolore, stati di incrocio G/H con stelle, ogni riquadro avanza al proprio ritmo. |
+| V4 | `v4-characters` | 28/08/2026 | 4 personaggi selezionabili, mai fermi (pause → piroette magiche ✦), immagini normalizzate alla stessa altezza, scarpe rosse. |
+| V5 | `v5-livelli` | 28/08/2026 | Livelli a scalini (2/3/4 coppie × 10/15/20 s), piroetta magica = un solo giro lento, uscite perpendicolari P/Q. |
+| V6 | `v6-rotation-circolare` | 28/08/2026 | In modo circolare i danzatori girano sempre su se stessi (`--spin-dur` = durata del movimento); sulle linee trasversali no. |
+| V7 | `v7-flussi` | 03/09/2026 | Countdown sulla scena già montata, spiegazione della piroetta, uscita mai "dritto" dopo l'incrocio, analisi errore con avviso + pausa 2 s, ballerina animata (dotLottie 💃 → sprite WebP). |
+| V8 | `v8-incrocio-ritorno` | 03/09/2026 | Dopo l'incrocio il ritorno indietro è **obbligatorio** (H, P, Q rimossi); cerchio e riquadri +25 % con raggio adattivo; guida appena visibile. |
+| V9 | `v9-nuovi-ballerini` | 03/09/2026 | Un solo ballerino disegnato per il gioco (36 immagini, piedi fissi) + la ballerina; nessuna scelta. |
+| V10 | `v10-roma-antica` | 03/09/2026 | Tema Roma antica (marmo 3D, palette oro) — **respinto** dall'owner (troppo scuro/marrone). Introdotta la scia di stelle sul cerchio. |
+| V11 | `v11-fluidita` | 03/09/2026 | Ritorno al tema scuro; antico solo nel riquadro; ballerino con movimenti armonici (gomiti); riquadri più grandi; mezzo cerchio più lento + **pivot fluido** al cambio di senso (senza stelle, fuori sequenza). |
+| V12 | `v12-rifiniture` | 03/09/2026 | Rotazioni senza "sparizione" (squeeze `scaleX` invece di `rotateY`), arresti fluidi, timer della demo sulla durata **reale**, analisi errore più chiara, lanterne, tuto ingrandito, sol in rilievo. |
+| V13 | `v13-pietre` | 03/09/2026 | Gioco di gambe +10 %, dallage beige piatto, lampade a olio, riquadro **ECCOLO** lampeggiante, firma "Designed by Hatem Maaroufi — V2 (09-2026)". |
+| V14 | `v14-pubblico` | 03/09/2026 | Cerchio ripristinato (tratto scuro su pietra chiara), **vere lastre romane** (foto-texture CC0), ballerino che imita la ballerina, lanterne da carrozza, **pubblico** che applaude visto dall'alto. |
+| V15 | `v15-fiaccole` | 03/09/2026 | Fiaccole di fuoco dietro il pubblico (eterogenee), pubblico più vivo, vere mani con dita. |
+| V16 | `v16-mocap` | 04/09/2026 | **Danza da vera motion capture** (CMU Mocap, BVH): parse + cinematica diretta, vista frontale stabile, ricerca automatica di un loop di 1,6 s, rendering nello stile del gioco. |
+| V17 | `v17-coreografie` | 04/09/2026 | **Coreografie variabili**: più danze mocap per ballerino, una per fascia di livello, con riprese delle danze precedenti per 5–10 s; cambio ogni 5–10 s, identico su tutti i riquadri. Documentazione (`CHANGELOG.md`, `docs/DANZA.md`). |
+
+Dettagli tecnici sulla danza: vedi [`docs/DANZA.md`](docs/DANZA.md).
